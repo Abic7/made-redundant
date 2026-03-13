@@ -584,10 +584,14 @@ export default function MadeRedundant() {
   const washingCount = filtered.filter(d=>d.aiConfidence==="washing").length;
   const companies    = filtered.length;
 
-  // Australia / NZ spotlight
-  const auData     = data.filter(d => d.country==="Australia" || d.country==="New Zealand");
-  const auJobs     = auData.reduce((s,d)=>s+d.headcount, 0);
-  const auGenuine  = auData.filter(d=>d.aiConfidence==="genuine").reduce((s,d)=>s+d.headcount, 0);
+  // Australia / NZ spotlight — same 1-year window + classification filter as the rest of the dashboard
+  const auData      = data.filter(d =>
+    (d.country==="Australia" || d.country==="New Zealand") &&
+    d.date >= oneYearAgo &&
+    (confFilter==="All" || d.aiConfidence===confFilter)
+  );
+  const auJobs      = auData.reduce((s,d)=>s+d.headcount, 0);
+  const auGenuine   = auData.filter(d=>d.aiConfidence==="genuine").reduce((s,d)=>s+d.headcount, 0);
   const auCompanies = auData.length;
 
   const nextRun = lastFetched
@@ -675,7 +679,7 @@ export default function MadeRedundant() {
             <div style={{ flex:1, minWidth:160 }}>
               <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:3,
                 color:"rgba(0,200,120,0.7)", textTransform:"uppercase", marginBottom:4 }}>
-                Australia &amp; NZ Spotlight
+                Australia &amp; NZ Spotlight · Last 12 months
               </div>
               <div style={{ display:"flex", gap:32, flexWrap:"wrap" }}>
                 <div>
