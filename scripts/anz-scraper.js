@@ -7,9 +7,10 @@
  * and outputs rows ready to paste into your Google Sheet.
  *
  * Sources:
- *   RSS  — ABC News, SMH, The Age, AFR, SmartCompany, Startup Daily,
- *           NZ Herald, Stuff NZ, RNZ Business
- *   API  — NewsAPI (ANZ domain-restricted queries)
+ *   RSS  — ABC News (general + tech + work + business), SMH, The Age, AFR,
+ *           SmartCompany, Startup Daily, ITNews, ZDNet AU, CRN AU, ARN,
+ *           9News, Herald Sun, NZ Herald, Stuff NZ, RNZ Business
+ *   API  — NewsAPI (ANZ domain-restricted queries, broader keyword set)
  *
  * Usage:
  *   ANTHROPIC_API_KEY=sk-... NEWSAPI_KEY=abc... node anz-scraper.js
@@ -44,36 +45,67 @@ const CUTOFF = new Date(ONE_YEAR_AGO);
 // ─────────────────────────────────────────────────────────────
 //  ANZ RSS SOURCES
 // ─────────────────────────────────────────────────────────────
+// prettier-ignore
 const RSS_SOURCES = [
-  // Australia
-  { name:"ABC News Business",   url:"https://www.abc.net.au/news/feed/51120/rss.xml",                  country:"Australia"   },
-  { name:"SMH Business",        url:"https://www.smh.com.au/rss/business.xml",                          country:"Australia"   },
-  { name:"The Age Business",    url:"https://www.theage.com.au/rss/business.xml",                       country:"Australia"   },
-  { name:"AFR",                 url:"https://www.afr.com/rss/feed",                                     country:"Australia"   },
-  { name:"SmartCompany",        url:"https://www.smartcompany.com.au/feed/",                            country:"Australia"   },
-  { name:"Startup Daily",       url:"https://www.startupdaily.net/feed/",                               country:"Australia"   },
-  { name:"9News Business",      url:"https://www.9news.com.au/rss/business",                            country:"Australia"   },
-  { name:"Herald Sun Business", url:"https://www.heraldsun.com.au/business/work/rss",                   country:"Australia"   },
-  // New Zealand
-  { name:"NZ Herald Business",  url:"https://www.nzherald.co.nz/business/rss/",                        country:"New Zealand" },
-  { name:"Stuff NZ Business",   url:"https://www.stuff.co.nz/business/rss",                            country:"New Zealand" },
-  { name:"RNZ Business",        url:"https://feeds.rnz.co.nz/businessrss.xml",                         country:"New Zealand" },
+  // ── ABC News (multiple sections — layoffs appear in general, tech and work, not just business)
+  { name:"ABC News — Top Stories",   url:"https://www.abc.net.au/news/feed/45910/rss.xml",   country:"Australia" },
+  { name:"ABC News — Business",      url:"https://www.abc.net.au/news/feed/51120/rss.xml",   country:"Australia" },
+  { name:"ABC News — Technology",    url:"https://www.abc.net.au/news/feed/51892/rss.xml",   country:"Australia" },
+  { name:"ABC News — Work & Career", url:"https://www.abc.net.au/news/feed/52498/rss.xml",   country:"Australia" },
+
+  // ── Mastheads
+  { name:"SMH Business",             url:"https://www.smh.com.au/rss/business.xml",          country:"Australia" },
+  { name:"SMH Technology",           url:"https://www.smh.com.au/rss/technology.xml",        country:"Australia" },
+  { name:"The Age Business",         url:"https://www.theage.com.au/rss/business.xml",       country:"Australia" },
+  { name:"The Age Technology",       url:"https://www.theage.com.au/rss/technology.xml",     country:"Australia" },
+  { name:"AFR",                      url:"https://www.afr.com/rss/feed",                     country:"Australia" },
+
+  // ── Tech & startup press (best ANZ coverage of AI/tech layoffs)
+  { name:"ITNews",                   url:"https://www.itnews.com.au/rss/news.xml",           country:"Australia" },
+  { name:"ZDNet AU",                 url:"https://www.zdnet.com/au/rss/news.xml",            country:"Australia" },
+  { name:"CRN Australia",            url:"https://www.crn.com.au/rss/news.xml",              country:"Australia" },
+  { name:"ARN (IT Brief AU)",        url:"https://www.arnnet.com.au/rss/news.xml",           country:"Australia" },
+  { name:"SmartCompany",             url:"https://www.smartcompany.com.au/feed/",            country:"Australia" },
+  { name:"Startup Daily",            url:"https://www.startupdaily.net/feed/",               country:"Australia" },
+  { name:"Business Insider AU",      url:"https://www.businessinsider.com.au/feed",          country:"Australia" },
+
+  // ── General news (layoffs often break here first)
+  { name:"9News Business",           url:"https://www.9news.com.au/rss/business",            country:"Australia" },
+  { name:"Herald Sun Business",      url:"https://www.heraldsun.com.au/business/work/rss",   country:"Australia" },
+
+  // ── New Zealand
+  { name:"NZ Herald Business",       url:"https://www.nzherald.co.nz/business/rss/",         country:"New Zealand" },
+  { name:"NZ Herald Technology",     url:"https://www.nzherald.co.nz/technology/rss/",       country:"New Zealand" },
+  { name:"Stuff NZ Business",        url:"https://www.stuff.co.nz/business/rss",             country:"New Zealand" },
+  { name:"RNZ Business",             url:"https://feeds.rnz.co.nz/businessrss.xml",          country:"New Zealand" },
+  { name:"Newsroom NZ",              url:"https://newsroom.co.nz/feed/",                     country:"New Zealand" },
 ];
 
 // ─────────────────────────────────────────────────────────────
 //  NEWSAPI QUERIES (domain-restricted to ANZ outlets)
 // ─────────────────────────────────────────────────────────────
 const ANZ_DOMAINS = [
-  "afr.com","smh.com.au","theage.com.au","abc.net.au",
+  // Mastheads
+  "afr.com","smh.com.au","theage.com.au","abc.net.au","heraldsun.com.au","9news.com.au",
+  // Tech press — these are the highest-signal sources for AI/tech layoffs
+  "itnews.com.au","zdnet.com","crn.com.au","arnnet.com.au",
+  // Startup / business
   "smartcompany.com.au","startupdaily.net","businessinsider.com.au",
+  // New Zealand
   "nzherald.co.nz","stuff.co.nz","rnz.co.nz","newsroom.co.nz",
 ].join(",");
 
 const NEWSAPI_QUERIES = [
-  { q:"layoffs redundancies AI artificial intelligence jobs Australia",    domains: ANZ_DOMAINS },
-  { q:"workforce reduction automation roles eliminated Australia",         domains: ANZ_DOMAINS },
-  { q:"\"made redundant\" AI technology jobs Australia \"New Zealand\"",   language:"en" },
-  { q:"headcount cut AI jobs Australia 2025 2026",                        domains: ANZ_DOMAINS },
+  // Broad layoff + AI terms across all ANZ domains
+  { q:"layoffs redundancies AI artificial intelligence jobs Australia",          domains: ANZ_DOMAINS },
+  { q:"workforce reduction automation roles eliminated Australia",               domains: ANZ_DOMAINS },
+  { q:"headcount cut AI technology jobs Australia",                              domains: ANZ_DOMAINS },
+  // Tech-press specific — ITNews, ZDNet, CRN cover vendor/enterprise AI layoffs
+  { q:"redundan* AI automation technology jobs Australia OR \"New Zealand\"",    domains: ANZ_DOMAINS },
+  // Catch articles that don't use the word "AI" but describe automation
+  { q:"\"made redundant\" outsourcing automation technology Australia",          language:"en" },
+  // NZ-specific pass
+  { q:"layoffs redundancies AI jobs \"New Zealand\"",                            domains: ANZ_DOMAINS },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -83,6 +115,9 @@ const LAYOFF_KW = [
   "redund","layoff","lay off","job cut","headcount","workforce reduction",
   "retrench","restructur","roles eliminat","position eliminat","staff cut",
   "job loss","made redundant","let go","downsiz","job shed",
+  // Outsourcing/offshoring — common in ANZ telecoms/banking (e.g. Telstra → India)
+  "outsourc","offshor","axe","axes","axing","shed jobs","shed role",
+  "cut jobs","cut role","eliminat","automat","job loss","role loss",
 ];
 
 function isLayoffRelated(text) {
