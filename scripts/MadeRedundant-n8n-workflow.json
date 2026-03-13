@@ -97,6 +97,18 @@
     },
     {
       "parameters": {
+        "jsCode": "// Sanitize title & description before JSON interpolation.\n// Removes control chars, replaces double-quotes with single-quotes,\n// and normalises backslashes — prevents 'JSON parameter needs to be\n// valid JSON' errors in the Claude Haiku HTTP Request node.\nconst sanitize = (str, maxLen) =>\n  (str || '')\n    .replace(/[\\x00-\\x1f\\x7f]/g, ' ')  // strip control chars (newlines etc)\n    .replace(/\"/g, \"'\")                 // \" → ' (safe inside JSON string)\n    .replace(/\\\\/g, '/')                // backslash → forward-slash\n    .trim()\n    .substring(0, maxLen);\n\nreturn [{ json: {\n  ...$json,\n  titleSafe: sanitize($json.title, 300),\n  descSafe:  sanitize($json.description, 500)\n}}];",
+        "mode": "runOnceForEachItem"
+      },
+      "name": "Sanitize Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [990, 380],
+      "id": "node_sanitize",
+      "notes": "Strips control chars / quotes / backslashes from title+description before Claude JSON interpolation. Fixes 'JSON parameter needs to be valid JSON' error when article text contains special characters."
+    },
+    {
+      "parameters": {
         "url": "https://api.anthropic.com/v1/messages",
         "method": "POST",
         "sendHeaders": true,
@@ -109,12 +121,12 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 180,\n  \"system\": \"Extract layoff data from news. Reply ONLY with minified JSON, no explanation. Keys: company(str) industry(str) country(str) region(str: North America|Europe|Asia-Pacific|Latin America|Middle East|Africa) date(str YYYY-MM) headcount(int,0 if unknown) aiConfidence(str: genuine|washing|restructure) quote(str: short exec quote about AI or empty)\",\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"Title: {{ $json.title }}\\nDesc: {{ $json.description }}\"\n  }]\n}"
+        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 180,\n  \"system\": \"Extract layoff data from news. Reply ONLY with minified JSON, no explanation. Keys: company(str) industry(str) country(str) region(str: North America|Europe|Asia-Pacific|Latin America|Middle East|Africa) date(str YYYY-MM) headcount(int,0 if unknown) aiConfidence(str: genuine|washing|restructure) quote(str: short exec quote about AI or empty)\",\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"Title: {{ $json.titleSafe }} Desc: {{ $json.descSafe }}\"\n  }]\n}"
       },
       "name": "Classify with Claude Haiku",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 3,
-      "position": [1100, 380],
+      "position": [1210, 380],
       "id": "node_claude",
       "notes": "Uses claude-haiku — cheapest model. ~4,000 tokens per 48hr run (up to 40 articles now with merged feeds)."
     },
@@ -186,7 +198,8 @@
     "Fetch AU/NZ Articles":   { "main": [[{ "node":"Merge Article Lists",       "type":"main","index":0 }]] },
     "Merge Article Lists":    { "main": [[{ "node":"Filter & Deduplicate",      "type":"main","index":0 }]] },
     "Get Existing Companies": { "main": [[{ "node":"Filter & Deduplicate",      "type":"main","index":0 }]] },
-    "Filter & Deduplicate":   { "main": [[{ "node":"Classify with Claude Haiku","type":"main","index":0 }]] },
+    "Filter & Deduplicate":   { "main": [[{ "node":"Sanitize Text",            "type":"main","index":0 }]] },
+    "Sanitize Text":          { "main": [[{ "node":"Classify with Claude Haiku","type":"main","index":0 }]] },
     "Classify with Claude Haiku": { "main": [[{ "node":"Parse & Validate",      "type":"main","index":0 }]] },
     "Parse & Validate":       { "main": [[{ "node":"Dedup Within Run",          "type":"main","index":0 }]] },
     "Dedup Within Run":       { "main": [[{ "node":"Write to Google Sheet",     "type":"main","index":0 }]] },
