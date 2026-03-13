@@ -1,0 +1,202 @@
+{
+  "name": "Made Redundant — Auto Ingest (Claude Haiku, Weekly)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "weeks", "weeksInterval": 1 }]
+        }
+      },
+      "name": "Every Week",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [200, 380],
+      "id": "node_schedule",
+      "notes": "Runs every 7 days. Change weeksInterval to adjust."
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/everything",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "q",        "value": "(layoffs OR redundancies OR \"job cuts\") AND (\"artificial intelligence\" OR automation OR AI)" },
+            { "name": "language", "value": "en" },
+            { "name": "sortBy",   "value": "publishedAt" },
+            { "name": "from",     "value": "={{ new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0] }}" },
+            { "name": "pageSize", "value": "20" },
+            { "name": "apiKey",   "value": "YOUR_NEWSAPI_KEY" }
+          ]
+        }
+      },
+      "name": "Fetch News Articles",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [420, 200],
+      "id": "node_news",
+      "notes": "Global search — fetches last 48h of news. Free tier = 100 req/day, well within limits."
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/everything",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "q",        "value": "(redundan* OR \"job cuts\" OR layoffs OR \"workforce reduction\") AND (\"artificial intelligence\" OR automation OR AI)" },
+            { "name": "domains",  "value": "itnews.com.au,smartcompany.com.au,ia.acs.org.au,afr.com,nzherald.co.nz,reseller.co.nz,rnz.co.nz,hcamag.com,stuff.co.nz,cyberdaily.au,capitalbrief.com,mi-3.com.au" },
+            { "name": "sortBy",   "value": "publishedAt" },
+            { "name": "from",     "value": "={{ new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0] }}" },
+            { "name": "pageSize", "value": "20" },
+            { "name": "apiKey",   "value": "YOUR_NEWSAPI_KEY" }
+          ]
+        }
+      },
+      "name": "Fetch AU/NZ Articles",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [420, 560],
+      "id": "node_aunz_news",
+      "notes": "AU/NZ domain-targeted search. Sources: itnews.com.au, smartcompany.com.au, ia.acs.org.au, afr.com, nzherald.co.nz, reseller.co.nz, rnz.co.nz, hcamag.com, stuff.co.nz, cyberdaily.au, capitalbrief.com, mi-3.com.au"
+    },
+    {
+      "parameters": {
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/YOUR_SHEET_ID/values/Sheet1",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "key", "value": "YOUR_GOOGLE_API_KEY" }
+          ]
+        }
+      },
+      "name": "Get Existing Companies",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [420, 740],
+      "id": "node_existing"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge global + AU/NZ NewsAPI responses into a single deduplicated article list\nconst allItems = $input.all();\nconst combined = [];\nconst seen = new Set();\n\nfor (const item of allItems) {\n  const articles = item.json.articles || [];\n  for (const a of articles) {\n    if (!seen.has(a.url)) {\n      seen.add(a.url);\n      combined.push(a);\n    }\n  }\n}\n\nconsole.log(`Merged ${combined.length} unique articles (global + AU/NZ sources).`);\nreturn [{ json: { articles: combined, status: 'ok', totalResults: combined.length } }];"
+      },
+      "name": "Merge Article Lists",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 380],
+      "id": "node_merge_articles",
+      "notes": "Combines global and AU/NZ feeds, deduplicates by URL. Passes a single articles array to the filter step."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pull existing company names to deduplicate\nconst sheet = $('Get Existing Companies').first().json;\nconst rows = sheet.values || [];\nconst existing = new Set(rows.slice(1).map(r => (r[0]||'').toLowerCase().trim()));\n\n// Pull merged articles (global + AU/NZ)\nconst news = $('Merge Article Lists').first().json;\nconst articles = news.articles || [];\n\n// Keyword filters — must mention layoffs AND AI\nconst layoffWords = ['layoff','redundan','job cut','workforce reduction','headcount','dismiss','let go','downsiz'];\nconst aiWords     = ['artificial intelligence',' ai ','automation','machine learning','generative ai','llm','chatgpt','claude','copilot'];\n\nconst candidates = articles.filter(a => {\n  const text = ((a.title||'') + ' ' + (a.description||'')).toLowerCase();\n  return layoffWords.some(k => text.includes(k)) && aiWords.some(k => text.includes(k));\n});\n\nif (!candidates.length) {\n  console.log('No new layoff+AI articles found in this cycle.');\n  return [];\n}\n\nconsole.log(`Found ${candidates.length} candidate articles.`);\n\nreturn candidates.map(a => ({ json: {\n  title:       a.title       || '',\n  description: a.description || '',\n  source:      a.source?.name || '',\n  url:         a.url         || '',\n  publishedAt: a.publishedAt || '',\n  existing:    JSON.stringify([...existing])   // pass along for dedup in next node\n}}));"
+      },
+      "name": "Filter & Deduplicate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 380],
+      "id": "node_filter"
+    },
+    {
+      "parameters": {
+        "url": "https://api.anthropic.com/v1/messages",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key",         "value": "YOUR_ANTHROPIC_API_KEY" },
+            { "name": "anthropic-version",  "value": "2023-06-01" },
+            { "name": "content-type",       "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 180,\n  \"system\": \"Extract layoff data from news. Reply ONLY with minified JSON, no explanation. Keys: company(str) industry(str) country(str) region(str: North America|Europe|Asia-Pacific|Latin America|Middle East|Africa) date(str YYYY-MM) headcount(int,0 if unknown) aiConfidence(str: genuine|washing|restructure) quote(str: short exec quote about AI or empty)\",\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"Title: {{ $json.title }}\\nDesc: {{ $json.description }}\"\n  }]\n}"
+      },
+      "name": "Classify with Claude Haiku",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1100, 380],
+      "id": "node_claude",
+      "notes": "Uses claude-haiku — cheapest model. ~4,000 tokens per 48hr run (up to 40 articles now with merged feeds)."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Claude's JSON response\nconst raw = $json.content?.[0]?.text || '{}';\n\nlet parsed;\ntry {\n  parsed = JSON.parse(raw.replace(/```json|```/gi,'').trim());\n} catch(e) {\n  console.log('Parse failed for:', raw);\n  return [];\n}\n\n// Validate\nif (!parsed.company || typeof parsed.headcount === 'undefined') return [];\n\n// Normalise\nparsed.headcount    = parseInt(parsed.headcount) || 0;\nparsed.aiConfidence = ['genuine','washing','restructure'].includes(parsed.aiConfidence)\n  ? parsed.aiConfidence : 'restructure';\nparsed.date = (parsed.date||'').substring(0,7);\nparsed.quote = (parsed.quote||'').substring(0,200);\n\n// Date sanity check — if Claude's date is >6 months before article publish date, use publishedAt instead\nconst publishedAt = ($json.publishedAt || '').substring(0,7);\nif (publishedAt) {\n  const claudeMs = new Date(parsed.date + '-01').getTime();\n  const pubMs    = new Date(publishedAt + '-01').getTime();\n  if (pubMs - claudeMs > 6 * 30 * 24 * 60 * 60 * 1000) {\n    console.log(`Date override: Claude said ${parsed.date}, article published ${publishedAt}`);\n    parsed.date = publishedAt;\n  }\n}\n\n// ── Rolling 1-year gate ──────────────────────────────────────\n// Reject any entry whose date falls outside today - 12 months.\n// This is the single source of truth for the date window —\n// matches the oneYearAgo filter in the React dashboard exactly.\nconst oneYearAgo = new Date();\noneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);\nconst entryDate = new Date((parsed.date || '1970-01') + '-01');\nif (entryDate < oneYearAgo) {\n  console.log(`Skipping out-of-window: ${parsed.company} (${parsed.date}) — older than rolling 1-year cutoff (${oneYearAgo.toISOString().substring(0,7)})`);\n  return [];\n}\n// ────────────────────────────────────────────────────────────\n\n// Skip zero headcount or bad dates\nif (parsed.headcount === 0 || !/^\\d{4}-\\d{2}$/.test(parsed.date)) return [];\n\n// Dedup check against existing sheet companies\nconst existing = JSON.parse($json.existing || '[]');\nif (existing.includes(parsed.company.toLowerCase().trim())) {\n  console.log(`Skipping duplicate: ${parsed.company}`);\n  return [];\n}\n\nreturn [{ json: parsed }];"
+      },
+      "name": "Parse & Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 380],
+      "id": "node_parse"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Deduplicate within this run — prevents double-writes when both global\n// and AU/NZ feeds return articles about the same company.\nconst items = $input.all();\nconst seen = new Set();\nconst unique = [];\nfor (const item of items) {\n  const key = (item.json.company || '').toLowerCase().trim();\n  if (key && !seen.has(key)) {\n    seen.add(key);\n    unique.push(item);\n  }\n}\nconsole.log(`Dedup: ${items.length} → ${unique.length} unique companies.`);\nreturn unique;",
+        "mode": "runOnceForAllItems"
+      },
+      "name": "Dedup Within Run",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1540, 380],
+      "id": "node_dedup_run",
+      "notes": "Prevents duplicate writes when both global + AU/NZ feeds find articles about the same company in the same run."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/YOUR_SHEET_ID/values/Sheet1:append",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "valueInputOption", "value": "RAW" },
+            { "name": "insertDataOption", "value": "INSERT_ROWS" },
+            { "name": "key",              "value": "YOUR_GOOGLE_API_KEY" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"values\": [[\n    \"{{ $json.company }}\",\n    \"{{ $json.industry }}\",\n    \"{{ $json.country }}\",\n    \"{{ $json.region }}\",\n    \"{{ $json.date }}\",\n    {{ $json.headcount }},\n    \"{{ $json.aiConfidence }}\",\n    \"{{ $json.quote }}\",\n    \"{{ new Date().toISOString() }}\"\n  ]]\n}"
+      },
+      "name": "Write to Google Sheet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1760, 380],
+      "id": "node_write",
+      "notes": "Uses API key auth (read-only key won't work here — needs write access via OAuth2 or a service account key)."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Summary log at end of run\nconst items = $input.all();\nconsole.log(`Run complete. ${items.length} new records written to Google Sheet.`);\nreturn items;"
+      },
+      "name": "Log Run Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1980, 380],
+      "id": "node_log"
+    }
+  ],
+  "connections": {
+    "Every Week": {
+      "main": [[
+        { "node":"Fetch News Articles",    "type":"main","index":0 },
+        { "node":"Fetch AU/NZ Articles",   "type":"main","index":0 },
+        { "node":"Get Existing Companies", "type":"main","index":0 }
+      ]]
+    },
+    "Fetch News Articles":    { "main": [[{ "node":"Merge Article Lists",       "type":"main","index":0 }]] },
+    "Fetch AU/NZ Articles":   { "main": [[{ "node":"Merge Article Lists",       "type":"main","index":0 }]] },
+    "Merge Article Lists":    { "main": [[{ "node":"Filter & Deduplicate",      "type":"main","index":0 }]] },
+    "Get Existing Companies": { "main": [[{ "node":"Filter & Deduplicate",      "type":"main","index":0 }]] },
+    "Filter & Deduplicate":   { "main": [[{ "node":"Classify with Claude Haiku","type":"main","index":0 }]] },
+    "Classify with Claude Haiku": { "main": [[{ "node":"Parse & Validate",      "type":"main","index":0 }]] },
+    "Parse & Validate":       { "main": [[{ "node":"Dedup Within Run",          "type":"main","index":0 }]] },
+    "Dedup Within Run":       { "main": [[{ "node":"Write to Google Sheet",     "type":"main","index":0 }]] },
+    "Write to Google Sheet":  { "main": [[{ "node":"Log Run Summary",           "type":"main","index":0 }]] }
+  },
+  "_meta": {
+    "name": "Made Redundant — n8n Pipeline",
+    "description": "Fetches AI layoff news every 48h from global + AU/NZ sources, classifies with Claude Haiku (~8k tokens/run), deduplicates, writes to Google Sheets. Dashboard auto-updates.",
+    "tokenEstimate": "~120 input + ~80 output per article × up to 40 articles = ~8,000 tokens per 48hr cycle",
+    "aunzSources": ["itnews.com.au","smartcompany.com.au","ia.acs.org.au","afr.com","nzherald.co.nz","reseller.co.nz","rnz.co.nz","hcamag.com","stuff.co.nz","cyberdaily.au","capitalbrief.com","mi-3.com.au"],
+    "author": "Cogniflow Technologies — maderedundant.io"
+  }
+}
