@@ -69,6 +69,11 @@ const RSS_SOURCES = [
   { name:"Startup Daily",            url:"https://www.startupdaily.net/feed/",               country:"Australia" },
   { name:"Business Insider AU",      url:"https://www.businessinsider.com.au/feed",          country:"Australia" },
 
+  // ── The Guardian Australia (strong ANZ coverage, business + tech sections)
+  { name:"Guardian AU — Australia News", url:"https://www.theguardian.com/australia-news/rss", country:"Australia" },
+  { name:"Guardian AU — Business",       url:"https://www.theguardian.com/business/rss",       country:"Australia" },
+  { name:"Guardian AU — Technology",     url:"https://www.theguardian.com/technology/rss",     country:"Australia" },
+
   // ── General news (layoffs often break here first)
   { name:"9News Business",           url:"https://www.9news.com.au/rss/business",            country:"Australia" },
   { name:"Herald Sun Business",      url:"https://www.heraldsun.com.au/business/work/rss",   country:"Australia" },
@@ -89,6 +94,8 @@ const ANZ_DOMAINS = [
   "afr.com","smh.com.au","theage.com.au","abc.net.au","heraldsun.com.au","9news.com.au",
   // Tech press — these are the highest-signal sources for AI/tech layoffs
   "itnews.com.au","zdnet.com","crn.com.au","arnnet.com.au",
+  // Guardian Australia
+  "theguardian.com",
   // Startup / business
   "smartcompany.com.au","startupdaily.net","businessinsider.com.au",
   // New Zealand
