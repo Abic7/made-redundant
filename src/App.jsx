@@ -1,4 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
+
+function useIsMobile(breakpoint = 768) {
+  return useSyncExternalStore(
+    cb => { window.addEventListener("resize", cb); return () => window.removeEventListener("resize", cb); },
+    () => window.innerWidth < breakpoint,
+    () => false,
+  );
+}
 
 // ─────────────────────────────────────────────────────────────
 //  CONFIG — set VITE_SHEET_ID and VITE_GOOGLE_API_KEY in
@@ -224,59 +232,115 @@ function ThemeToggle({ dark, onToggle, t }) {
 
 function BubbleViz({ data, t }) {
   const [tip, setTip] = useState(null);
-  const allDates = [...new Set(data.map(d=>d.date))].filter(Boolean).sort();
+
+  const allDates = [...new Set(data.map(d => d.date))].filter(Boolean).sort();
   const months   = allDates.length ? allDates : ["2025-05","2025-09","2025-12","2026-01","2026-02","2026-03"];
-  const W        = Math.max(700, months.length * 120);
-  const maxH     = Math.max(...data.map(d=>d.headcount), 1);
+
+  const W   = Math.max(700, months.length * 130);
+  const H   = 300;
+  const PAD = { top:16, right:24, bottom:36, left:56 };
+  const plotW = W - PAD.left - PAD.right;
+  const plotH = H - PAD.top  - PAD.bottom;
+
+  // X: evenly spaced months
+  const xOf = date => {
+    const i = months.indexOf(date);
+    if (months.length === 1) return PAD.left + plotW / 2;
+    return PAD.left + (i / (months.length - 1)) * plotW;
+  };
+
+  // Y: log scale — larger headcount = higher up
+  const headcounts = data.map(d => d.headcount).filter(h => h > 0);
+  const logMin = Math.log(Math.max(Math.min(...headcounts, 100), 1));
+  const logMax = Math.log(Math.max(...headcounts, 1000));
+  const yOf = h => PAD.top + (1 - (Math.log(Math.max(h,1)) - logMin) / (logMax - logMin)) * plotH;
+
+  // X jitter: spread overlapping dots within a month column
+  const byMonth = {};
+  data.forEach(d => { (byMonth[d.date] = byMonth[d.date] || []).push(d); });
+  const jitterX = {};
+  Object.entries(byMonth).forEach(([m, items]) => {
+    const spread = Math.min(50, items.length * 10);
+    items.forEach((d, i) => {
+      jitterX[d.company] = items.length === 1
+        ? 0
+        : ((i / (items.length - 1)) - 0.5) * spread;
+    });
+  });
+
+  // Y axis ticks
+  const yTicks = [100, 500, 1000, 5000, 10000, 20000].filter(v =>
+    Math.log(v) >= logMin - 0.5 && Math.log(v) <= logMax + 0.5
+  );
 
   return (
     <div style={{ position:"relative" }}>
       <div style={{ overflowX:"auto" }}>
-        <svg width="100%" viewBox={`0 0 ${W} 260`} style={{ display:"block", minWidth:560 }}>
-          {months.map((_,i) => (
-            <line key={i} x1={70+i*120} y1={10} x2={70+i*120} y2={220}
-              stroke={t.border} strokeWidth={1} strokeDasharray="3,6" />
+        <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display:"block", minWidth:500 }}>
+
+          {/* Y gridlines + labels */}
+          {yTicks.map(v => (
+            <g key={v}>
+              <line x1={PAD.left} y1={yOf(v)} x2={W-PAD.right} y2={yOf(v)}
+                stroke={t.border} strokeWidth={1} strokeDasharray="2,5" />
+              <text x={PAD.left-6} y={yOf(v)+4} textAnchor="end"
+                fill={t.textDim} fontSize={8} fontFamily="IBM Plex Mono,monospace">{fmt(v)}</text>
+            </g>
           ))}
-          {months.map((m,i) => (
-            <text key={i} x={70+i*120} y={245} textAnchor="middle"
-              fill={t.textDim} fontSize={9} fontFamily="IBM Plex Mono,monospace" letterSpacing={1}>
-              {fmtMon(m).toUpperCase()}
-            </text>
+
+          {/* X gridlines + month labels */}
+          {months.map(m => (
+            <g key={m}>
+              <line x1={xOf(m)} y1={PAD.top} x2={xOf(m)} y2={H-PAD.bottom}
+                stroke={t.border} strokeWidth={1} strokeDasharray="2,6" />
+              <text x={xOf(m)} y={H-PAD.bottom+14} textAnchor="middle"
+                fill={t.textDim} fontSize={9} fontFamily="IBM Plex Mono,monospace" letterSpacing={1}>
+                {fmtMon(m).toUpperCase()}
+              </text>
+            </g>
           ))}
-          {data.map((d,i) => {
-            const xi = months.indexOf(d.date);
-            const cx = xi>=0 ? 70+xi*120+(i%3-1)*18 : 70;
-            const r  = Math.max(10, Math.sqrt(d.headcount/maxH)*56);
-            const cy = 65+(i%4)*46;
-            const c  = CONF[d.aiConfidence]||CONF.restructure;
+
+          {/* Bubbles — sorted smallest first so big ones don't swallow tiny ones */}
+          {[...data].sort((a,b) => b.headcount - a.headcount).map((d, i) => {
+            const cx = xOf(d.date) + (jitterX[d.company] || 0);
+            const cy = yOf(d.headcount);
+            const r  = Math.max(7, Math.sqrt(d.headcount / Math.max(...data.map(x=>x.headcount), 1)) * 44);
+            const c  = CONF[d.aiConfidence] || CONF.restructure;
             return (
               <g key={i} style={{ cursor:"pointer" }}
-                onMouseEnter={e=>setTip({d,x:e.clientX,y:e.clientY})}
-                onMouseLeave={()=>setTip(null)}>
-                <circle cx={cx} cy={cy} r={r+6} fill={c.color} opacity={0.07}/>
-                <circle cx={cx} cy={cy} r={r}   fill={c.color} opacity={0.82}/>
-                <text x={cx} y={cy+4} textAnchor="middle" fill="#fff"
-                  fontSize={Math.min(11,r*0.55)} fontWeight={700}
-                  fontFamily="IBM Plex Mono,monospace" style={{ pointerEvents:"none" }}>
-                  {d.company.split(/[\s/]/)[0]}
-                </text>
+                onMouseEnter={e => setTip({ d, x:e.clientX, y:e.clientY })}
+                onMouseMove={e  => setTip(prev => prev ? { ...prev, x:e.clientX, y:e.clientY } : null)}
+                onMouseLeave={() => setTip(null)}>
+                <circle cx={cx} cy={cy} r={r+5} fill={c.color} opacity={0.07} />
+                <circle cx={cx} cy={cy} r={r}   fill={c.color} opacity={0.85} />
+                {r > 14 && (
+                  <text x={cx} y={cy+4} textAnchor="middle" fill="#fff"
+                    fontSize={Math.min(10, r * 0.52)} fontWeight={600}
+                    fontFamily="IBM Plex Mono,monospace" style={{ pointerEvents:"none" }}>
+                    {d.company.split(/[\s/(]/)[0]}
+                  </text>
+                )}
               </g>
             );
           })}
         </svg>
       </div>
+
       {tip && (() => {
-        const c = CONF[tip.d.aiConfidence]||CONF.restructure;
+        const c = CONF[tip.d.aiConfidence] || CONF.restructure;
         return (
           <div style={{
-            position:"fixed", left:tip.x+14, top:tip.y-80, zIndex:999, pointerEvents:"none",
+            position:"fixed", left:tip.x+14, top:tip.y-90, zIndex:999, pointerEvents:"none",
             background:t.tooltipBg, border:`1px solid ${c.color}`,
-            borderRadius:4, padding:"12px 16px", maxWidth:280,
+            borderRadius:4, padding:"12px 16px", maxWidth:290,
             boxShadow:`0 8px 32px ${c.glow}`
           }}>
             <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, color:t.text }}>{tip.d.company}</div>
             <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:10, color:c.color, letterSpacing:1, marginTop:3 }}>
               {fmt(tip.d.headcount)} JOBS · {tip.d.country}
+            </div>
+            <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, color:t.textDim, letterSpacing:1, marginTop:2 }}>
+              {fmtMon(tip.d.date)} · {tip.d.industry}
             </div>
             {tip.d.quote && (
               <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
@@ -379,20 +443,57 @@ function TimelineView({ data, t }) {
 }
 
 function TableView({ data, t }) {
+  const [sortBy,  setSortBy]  = useState("headcount");
+  const [sortDir, setSortDir] = useState("desc");
+
+  const cols = [
+    { key:"company",      label:"Company" },
+    { key:"industry",     label:"Industry" },
+    { key:"country",      label:"Country" },
+    { key:"headcount",    label:"Jobs" },
+    { key:"date",         label:"Date" },
+    { key:"aiConfidence", label:"Classification" },
+  ];
+
+  const handleSort = key => {
+    if (sortBy === key) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortBy(key); setSortDir("desc"); }
+  };
+
+  const sorted = [...data].sort((a, b) => {
+    let av = a[sortBy], bv = b[sortBy];
+    if (sortBy === "headcount") { av = a.headcount; bv = b.headcount; }
+    if (typeof av === "number") return sortDir === "asc" ? av - bv : bv - av;
+    return sortDir === "asc"
+      ? String(av).localeCompare(String(bv))
+      : String(bv).localeCompare(String(av));
+  });
+
   return (
     <div style={{ overflowX:"auto" }}>
       <table style={{ width:"100%", borderCollapse:"collapse" }}>
         <thead>
           <tr style={{ borderBottom:`1px solid ${t.borderMid}` }}>
-            {["Company","Industry","Country","Jobs","Date","Classification"].map(h => (
-              <th key={h} style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:3,
-                color:t.textDim, textTransform:"uppercase", padding:"10px 16px",
-                textAlign:"left", fontWeight:400 }}>{h}</th>
-            ))}
+            {cols.map(({ key, label }) => {
+              const active = sortBy === key;
+              return (
+                <th key={key} onClick={() => handleSort(key)}
+                  style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:3,
+                    color: active ? t.text : t.textDim, textTransform:"uppercase",
+                    padding:"10px 16px", textAlign:"left", fontWeight:400,
+                    cursor:"pointer", userSelect:"none", whiteSpace:"nowrap",
+                    transition:"color 0.12s" }}>
+                  {label}
+                  <span style={{ marginLeft:5, opacity: active ? 1 : 0.3, fontSize:8 }}>
+                    {active ? (sortDir === "asc" ? "↑" : "↓") : "↕"}
+                  </span>
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
-          {data.map((d,i) => (
+          {sorted.map((d, i) => (
             <tr key={i}
               style={{ borderBottom:`1px solid ${t.border}`,
                 background:i%2===0?t.surface:"transparent", transition:"background 0.12s", cursor:"default" }}
@@ -423,6 +524,7 @@ function TableView({ data, t }) {
 //  MAIN APP
 // ─────────────────────────────────────────────────────────────
 export default function MadeRedundant() {
+  const isMobile = useIsMobile();
   const [isDark,         setIsDark]        = useState(true);
   const [data,           setData]          = useState(SEED_DATA);
   const [status,         setStatus]        = useState("seed");
@@ -430,6 +532,7 @@ export default function MadeRedundant() {
   const [tab,            setTab]           = useState("overview");
   const [regionFilter,   setRegionFilter]  = useState("All");
   const [confFilter,     setConfFilter]    = useState("All");
+  const [search,         setSearch]        = useState("");
   const [mounted,        setMounted]       = useState(false);
 
   const t = THEMES[isDark ? "dark" : "light"];
@@ -466,14 +569,26 @@ export default function MadeRedundant() {
   const oneYearAgo = (() => { const d = new Date(); d.setFullYear(d.getFullYear()-1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; })();
 
   const regions  = ["All", ...Array.from(new Set(data.map(d=>d.region))).sort()];
+  const searchQ  = search.trim().toLowerCase();
   const filtered = data
-    .filter(d => d.date >= oneYearAgo && (regionFilter==="All"||d.region===regionFilter) && (confFilter==="All"||d.aiConfidence===confFilter))
+    .filter(d =>
+      d.date >= oneYearAgo &&
+      (regionFilter==="All" || d.region===regionFilter) &&
+      (confFilter==="All"   || d.aiConfidence===confFilter) &&
+      (!searchQ || d.company.toLowerCase().includes(searchQ) || d.industry.toLowerCase().includes(searchQ))
+    )
     .sort((a,b)=>b.headcount-a.headcount);
 
   const totalJobs    = filtered.reduce((s,d)=>s+d.headcount, 0);
   const genuineJobs  = filtered.filter(d=>d.aiConfidence==="genuine").reduce((s,d)=>s+d.headcount, 0);
   const washingCount = filtered.filter(d=>d.aiConfidence==="washing").length;
   const companies    = filtered.length;
+
+  // Australia / NZ spotlight
+  const auData     = data.filter(d => d.country==="Australia" || d.country==="New Zealand");
+  const auJobs     = auData.reduce((s,d)=>s+d.headcount, 0);
+  const auGenuine  = auData.filter(d=>d.aiConfidence==="genuine").reduce((s,d)=>s+d.headcount, 0);
+  const auCompanies = auData.length;
 
   const nextRun = lastFetched
     ? new Date(new Date(lastFetched).getTime()+7*24*3600*1000)
@@ -498,7 +613,7 @@ export default function MadeRedundant() {
       <div style={{ position:"fixed", top:0, left:0, right:0, height:2, zIndex:100,
         background:"linear-gradient(90deg,#ff3b3b 0%,#ff7b3b 55%,transparent 100%)" }}/>
 
-      <div style={{ position:"relative", zIndex:1, maxWidth:1240, margin:"0 auto", padding:"48px 24px" }}>
+      <div style={{ position:"relative", zIndex:1, maxWidth:1240, margin:"0 auto", padding: isMobile ? "32px 16px" : "48px 24px" }}>
 
         {/* ══ MASTHEAD ══ */}
         <div style={{ marginBottom:48 }}>
@@ -549,9 +664,78 @@ export default function MadeRedundant() {
           <Stat label="Companies Tracked"   value={companies}        sub="and counting"                  accent={CONF.restructure.color} t={t}/>
         </div>
 
+        {/* ══ AUSTRALIA SPOTLIGHT ══ */}
+        {auCompanies > 0 && (
+          <div style={{
+            marginBottom:28, padding:"16px 20px", borderRadius:4,
+            background:"rgba(0,160,100,0.06)", border:"1px solid rgba(0,180,110,0.18)",
+            display:"flex", alignItems:"center", gap:24, flexWrap:"wrap",
+          }}>
+            <span style={{ fontSize:18 }}>🇦🇺</span>
+            <div style={{ flex:1, minWidth:160 }}>
+              <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:3,
+                color:"rgba(0,200,120,0.7)", textTransform:"uppercase", marginBottom:4 }}>
+                Australia &amp; NZ Spotlight
+              </div>
+              <div style={{ display:"flex", gap:32, flexWrap:"wrap" }}>
+                <div>
+                  <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28,
+                    color:"#00c878", letterSpacing:2 }}>{fmt(auJobs)}</span>
+                  <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
+                    color:"rgba(0,200,120,0.55)", marginLeft:8, letterSpacing:1 }}>TOTAL JOBS</span>
+                </div>
+                <div>
+                  <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28,
+                    color:"#00c878", letterSpacing:2 }}>{fmt(auGenuine)}</span>
+                  <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
+                    color:"rgba(0,200,120,0.55)", marginLeft:8, letterSpacing:1 }}>DISPLACED BY AI</span>
+                </div>
+                <div>
+                  <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28,
+                    color:"#00c878", letterSpacing:2 }}>{auCompanies}</span>
+                  <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
+                    color:"rgba(0,200,120,0.55)", marginLeft:8, letterSpacing:1 }}>COMPANIES</span>
+                </div>
+              </div>
+            </div>
+            <button onClick={() => setRegionFilter("Asia-Pacific")}
+              style={{ padding:"6px 16px", borderRadius:2, cursor:"pointer",
+                background:"rgba(0,180,110,0.1)", border:"1px solid rgba(0,180,110,0.3)",
+                color:"#00c878", fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
+                letterSpacing:2, whiteSpace:"nowrap", flexShrink:0 }}>
+              FILTER REGION ↗
+            </button>
+          </div>
+        )}
+
         {/* ══ FILTERS ══ */}
         <div style={{ display:"flex", gap:20, flexWrap:"wrap", alignItems:"center",
           marginBottom:28, paddingBottom:24, borderBottom:`1px solid ${t.border}` }}>
+
+          {/* Search */}
+          <div style={{ position:"relative", flexShrink:0 }}>
+            <span style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)",
+              fontSize:11, color:t.textDim, pointerEvents:"none" }}>⌕</span>
+            <input
+              type="text"
+              placeholder="Search company or industry…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{
+                paddingLeft:26, paddingRight:search ? 28 : 12, paddingTop:5, paddingBottom:5,
+                background:t.btnBg, border:`1px solid ${search ? t.borderMid : t.btnBorder}`,
+                borderRadius:2, color:t.text, outline:"none",
+                fontFamily:"'IBM Plex Mono',monospace", fontSize:10, letterSpacing:1,
+                width:220, transition:"border-color 0.15s",
+              }}
+            />
+            {search && (
+              <button onClick={() => setSearch("")}
+                style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)",
+                  background:"none", border:"none", cursor:"pointer",
+                  color:t.textDim, fontSize:12, lineHeight:1, padding:0 }}>✕</button>
+            )}
+          </div>
 
           {/* Classification toggle buttons */}
           <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
@@ -611,7 +795,7 @@ export default function MadeRedundant() {
 
         {/* ══ OVERVIEW ══ */}
         {tab==="overview" && (
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 300px", gap:20 }}>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 300px", gap:20 }}>
             <div style={{ border:`1px solid ${t.border}`, borderRadius:4,
               padding:24, background:t.surface }}>
               <div style={{ fontSize:9, letterSpacing:3, color:t.textDim,
@@ -630,7 +814,7 @@ export default function MadeRedundant() {
         {/* ══ TIMELINE ══ */}
         {tab==="timeline" && (
           <div style={{ border:`1px solid ${t.border}`, borderRadius:4,
-            padding:"28px 32px", background:t.surface }}>
+            padding: isMobile ? "16px" : "28px 32px", background:t.surface }}>
             <TimelineView data={filtered} t={t}/>
           </div>
         )}

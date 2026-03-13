@@ -1,0 +1,14 @@
+{
+  "name": "anz-layoffs-scraper",
+  "version": "1.0.0",
+  "description": "ANZ AI layoffs scraper — RSS + NewsAPI + Claude Haiku classification",
+  "main": "anz-scraper.js",
+  "scripts": {
+    "scrape": "node anz-scraper.js",
+    "scrape:rss-only": "NEWSAPI_KEY='' node anz-scraper.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {}
+}

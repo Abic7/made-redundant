@@ -15,6 +15,10 @@ dist
 dist-ssr
 *.local
 
+# ANZ scraper outputs (generated data, never commit)
+scripts/anz-layoffs-data.json
+scripts/anz-layoffs-data.tsv
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
