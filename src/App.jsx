@@ -472,7 +472,7 @@ export default function MadeRedundant() {
   const companies    = filtered.length;
 
   const nextRun = lastFetched
-    ? new Date(new Date(lastFetched).getTime()+48*3600*1000)
+    ? new Date(new Date(lastFetched).getTime()+7*24*3600*1000)
         .toLocaleDateString("en-AU",{weekday:"short",hour:"2-digit",minute:"2-digit"}).toUpperCase()
     : null;
 
@@ -528,7 +528,7 @@ export default function MadeRedundant() {
               color:t.textMid, margin:0, lineHeight:1.8, maxWidth:500 }}>
               Tracking every workforce reduction attributed to artificial intelligence.<br/>
               <span style={{ color:t.textFaint }}>
-                Updated every 48 hours · Classified by Claude AI · Automated with n8n
+                Updated weekly · Classified by Claude AI · Automated with n8n
               </span>
             </p>
             <LiveBadge status={status} nextRun={nextRun} t={t}/>
