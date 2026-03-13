@@ -441,7 +441,7 @@ export default function MadeRedundant() {
   useEffect(() => { try { const s=localStorage.getItem("mr-theme"); if(s) setIsDark(s==="dark"); } catch {} }, []);
 
   const fetchSheet = useCallback(async () => {
-    if (SHEET_ID==="YOUR_GOOGLE_SHEET_ID") return;
+    if (!SHEET_ID || !API_KEY) return;
     setStatus("loading");
     try {
       const res  = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`);
