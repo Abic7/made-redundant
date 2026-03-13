@@ -8,8 +8,12 @@
  *
  * Sources:
  *   RSS  — ABC News (general + tech + work + business), SMH, The Age, AFR,
- *           SmartCompany, Startup Daily, ITNews, ZDNet AU, CRN AU, ARN,
- *           9News, Herald Sun, NZ Herald, Stuff NZ, RNZ Business
+ *           The Australian, News.com.au, Crikey, The New Daily, AAP, 7News,
+ *           The West Australian, The Nightly, The Conversation AU,
+ *           Yahoo Finance AU, HRD Australia, SmartCompany, Startup Daily,
+ *           ITNews, ZDNet AU, CRN AU, ARN, Guardian AU,
+ *           NZ Herald, Stuff NZ, RNZ Business, Newsroom NZ
+ *   Data — Layoffs.fyi (filtered ANZ), TrueUp.io (filtered ANZ)
  *   API  — NewsAPI (ANZ domain-restricted queries, broader keyword set)
  *
  * Usage:
@@ -60,6 +64,20 @@ const RSS_SOURCES = [
   { name:"The Age Technology",       url:"https://www.theage.com.au/rss/technology.xml",     country:"Australia" },
   { name:"AFR",                      url:"https://www.afr.com/rss/feed",                     country:"Australia" },
 
+  // ── Broader Australian mastheads
+  { name:"The Australian",          url:"https://www.theaustralian.com.au/feed/",               country:"Australia" },
+  { name:"News.com.au — Finance",   url:"https://www.news.com.au/finance/rss",                  country:"Australia" },
+  { name:"News.com.au — National",  url:"https://www.news.com.au/national/rss",                 country:"Australia" },
+  { name:"Crikey",                  url:"https://www.crikey.com.au/feed/",                      country:"Australia" },
+  { name:"The New Daily",           url:"https://thenewdaily.com.au/feed/",                     country:"Australia" },
+  { name:"AAP News",                url:"https://aap.com.au/feed/",                             country:"Australia" },
+  { name:"7News Australia",         url:"https://7news.com.au/rss/news.xml",                    country:"Australia" },
+  { name:"The West Australian",     url:"https://thewest.com.au/rss",                           country:"Australia" },
+  { name:"The Nightly",             url:"https://www.thenightly.com.au/feed/",                  country:"Australia" },
+  { name:"The Conversation AU",     url:"https://theconversation.com/au/feeds/rss.xml",         country:"Australia" },
+  { name:"Yahoo Finance AU",        url:"https://au.finance.yahoo.com/rss/",                    country:"Australia" },
+  { name:"HRD Australia",           url:"https://www.hcamag.com/au/feed",                       country:"Australia" },
+
   // ── Tech & startup press (best ANZ coverage of AI/tech layoffs)
   { name:"ITNews",                   url:"https://www.itnews.com.au/rss/news.xml",           country:"Australia" },
   { name:"ZDNet AU",                 url:"https://www.zdnet.com/au/rss/news.xml",            country:"Australia" },
@@ -90,9 +108,14 @@ const RSS_SOURCES = [
 //  NEWSAPI QUERIES (domain-restricted to ANZ outlets)
 // ─────────────────────────────────────────────────────────────
 const ANZ_DOMAINS = [
-  // Mastheads
-  "afr.com","smh.com.au","theage.com.au","abc.net.au","heraldsun.com.au","9news.com.au",
-  // Tech press — these are the highest-signal sources for AI/tech layoffs
+  // Major mastheads
+  "afr.com","smh.com.au","theage.com.au","abc.net.au","heraldsun.com.au",
+  "theaustralian.com.au","news.com.au","thenightly.com.au","thewest.com.au",
+  "9news.com.au","7news.com.au","aap.com.au",
+  // Analysis / niche
+  "crikey.com.au","thenewdaily.com.au","theconversation.com","hcamag.com",
+  "finance.yahoo.com",
+  // Tech press
   "itnews.com.au","zdnet.com","crn.com.au","arnnet.com.au",
   // Guardian Australia
   "theguardian.com",
@@ -306,6 +329,96 @@ async function classifyWithClaude(article) {
 }
 
 // ─────────────────────────────────────────────────────────────
+//  DATA TRACKER FETCHERS (Layoffs.fyi + TrueUp.io)
+//  These are aggregator sites, not RSS — require HTML parsing
+// ─────────────────────────────────────────────────────────────
+const ANZ_COUNTRIES = ["australia","new zealand","australia/nz"];
+
+function htmlDecode(str) {
+  return str.replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">")
+            .replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&nbsp;/g," ");
+}
+
+// Layoffs.fyi — parses their public HTML table, filters ANZ rows
+async function fetchLayoffsFyi() {
+  try {
+    const html = await fetchURL("https://layoffs.fyi/");
+    // Their table rows look like: <tr ...><td>Company</td><td>Country</td>...
+    const rows = [];
+    const trRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+    let m;
+    while ((m = trRe.exec(html)) !== null) {
+      const tds = [...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)]
+        .map(t => htmlDecode(t[1].replace(/<[^>]+>/g,"").trim()));
+      if (tds.length < 3) continue;
+      // Filter: any cell must contain Australia or New Zealand
+      const rowText = tds.join(" ").toLowerCase();
+      if (!ANZ_COUNTRIES.some(c => rowText.includes(c))) continue;
+      if (!isLayoffRelated(rowText)) continue;
+
+      // Common column order: Company, Headcount, Date, Industry, Country, Source
+      const title       = tds[0] ? `${tds[0]} layoffs` : "";
+      const description = tds.join(" — ");
+      rows.push({
+        title, description,
+        pubDate:    tds[2] || "",
+        link:       "https://layoffs.fyi/",
+        sourceName: "Layoffs.fyi",
+        country:    tds.find(t => ANZ_COUNTRIES.includes(t.toLowerCase())) || "Australia",
+      });
+    }
+    return rows;
+  } catch (e) {
+    console.warn(`  ✗ Layoffs.fyi: ${e.message}`);
+    return [];
+  }
+}
+
+// TrueUp.io — fetches their layoffs tracker page, filters ANZ rows
+async function fetchTrueUp() {
+  try {
+    const html = await fetchURL("https://www.trueup.io/layoffs");
+    const rows = [];
+    const trRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+    let m;
+    while ((m = trRe.exec(html)) !== null) {
+      const tds = [...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)]
+        .map(t => htmlDecode(t[1].replace(/<[^>]+>/g,"").trim()));
+      if (tds.length < 3) continue;
+      const rowText = tds.join(" ").toLowerCase();
+      if (!ANZ_COUNTRIES.some(c => rowText.includes(c))) continue;
+      if (!isLayoffRelated(rowText)) continue;
+
+      const title       = tds[0] ? `${tds[0]} layoffs` : "";
+      const description = tds.join(" — ");
+      rows.push({
+        title, description,
+        pubDate:    tds[2] || "",
+        link:       "https://www.trueup.io/layoffs",
+        sourceName: "TrueUp.io",
+        country:    tds.find(t => ANZ_COUNTRIES.includes(t.toLowerCase())) || "Australia",
+      });
+    }
+    return rows;
+  } catch (e) {
+    console.warn(`  ✗ TrueUp.io: ${e.message}`);
+    return [];
+  }
+}
+
+async function fetchDataTrackers() {
+  process.stdout.write("  Layoffs.fyi                    ");
+  const lfyi = await fetchLayoffsFyi();
+  console.log(lfyi.length ? `${lfyi.length} ANZ rows` : "0");
+
+  process.stdout.write("  TrueUp.io                      ");
+  const trup = await fetchTrueUp();
+  console.log(trup.length ? `${trup.length} ANZ rows` : "0");
+
+  return [...lfyi, ...trup];
+}
+
+// ─────────────────────────────────────────────────────────────
 //  DEDUPLICATION
 // ─────────────────────────────────────────────────────────────
 function dedup(articles) {
@@ -324,7 +437,7 @@ function dedup(articles) {
 async function main() {
   console.log("\n🇦🇺  ANZ AI Layoffs Scraper");
   console.log(`    Period : ${ONE_YEAR_AGO} → today`);
-  console.log(`    Sources: ${RSS_SOURCES.length} RSS feeds + ${NEWSAPI_QUERIES.length} NewsAPI queries\n`);
+  console.log(`    Sources: ${RSS_SOURCES.length} RSS feeds + ${NEWSAPI_QUERIES.length} NewsAPI queries + Layoffs.fyi + TrueUp.io\n`);
 
   // ── 1. Fetch ──────────────────────────────────────────────
   console.log("── Fetching RSS feeds ──────────────────────────────");
@@ -343,7 +456,10 @@ async function main() {
     return items;
   }));
 
-  const allArticles = dedup([...rssChunks.flat(), ...apiChunks.flat()]);
+  console.log("\n── Fetching data trackers ──────────────────────────");
+  const trackerItems = await fetchDataTrackers();
+
+  const allArticles = dedup([...rssChunks.flat(), ...apiChunks.flat(), ...trackerItems]);
   console.log(`\nTotal after dedup : ${allArticles.length} articles\n`);
 
   if (allArticles.length === 0) {
