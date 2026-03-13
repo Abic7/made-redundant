@@ -448,8 +448,12 @@ export default function MadeRedundant() {
       if (!res.ok) throw new Error(res.status);
       const json = await res.json();
       const rows = parseSheetRows(json.values||[]);
-      if (rows.length) { setData(rows); setStatus("live"); setLastFetched(new Date().toISOString()); }
-      else setStatus("error");
+      if (rows.length) {
+        // Merge: sheet entries take precedence; seed fills any company not yet in sheet
+        const sheetNames = new Set(rows.map(r => r.company.toLowerCase().trim()));
+        const merged = [...rows, ...SEED_DATA.filter(s => !sheetNames.has(s.company.toLowerCase().trim()))];
+        setData(merged); setStatus("live"); setLastFetched(new Date().toISOString());
+      } else setStatus("error");
     } catch { setStatus("error"); }
   }, []);
 
