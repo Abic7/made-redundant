@@ -181,6 +181,112 @@ function fetchURL(url, headers = {}) {
 }
 
 // ─────────────────────────────────────────────────────────────
+//  PAYWALL BYPASS
+//  News Corp AU (theaustralian.com.au, news.com.au, heraldsun.com.au,
+//  thenightly.com.au) and AFR block direct fetches. When an RSS item
+//  links to one of these, we try three fallback routes to get the
+//  full article body before sending it to Claude for classification.
+// ─────────────────────────────────────────────────────────────
+const PAYWALLED_DOMAINS = [
+  "theaustralian.com.au",
+  "news.com.au",
+  "heraldsun.com.au",
+  "thenightly.com.au",
+  "afr.com",
+  "dailytelegraph.com.au",
+  "couriermail.com.au",
+  "adelaidenow.com.au",
+];
+
+function isPaywalled(url) {
+  try { return PAYWALLED_DOMAINS.some(d => new URL(url).hostname.includes(d)); }
+  catch { return false; }
+}
+
+function looksPaywalled(html) {
+  if (!html || html.length < 400) return true;
+  const lower = html.toLowerCase();
+  return (
+    lower.includes("subscribe to read") ||
+    lower.includes("subscription required") ||
+    lower.includes("sign in to read") ||
+    lower.includes("already a subscriber") ||
+    lower.includes("unlock this article") ||
+    lower.includes("create a free account")
+  );
+}
+
+// Strategy 1 — removepaywalls.com
+async function tryRemovePaywalls(url) {
+  const proxy = `https://removepaywalls.com/${url}`;
+  try {
+    const html = await fetchURL(proxy);
+    if (looksPaywalled(html)) return null;
+    return html;
+  } catch { return null; }
+}
+
+// Strategy 2 — Wayback Machine (latest snapshot via CDX API then fetch)
+async function tryWayback(url) {
+  try {
+    const cdx = await fetchURL(
+      `https://web.archive.org/cdx/search/cdx?url=${encodeURIComponent(url)}&output=json&limit=1&fl=timestamp&filter=statuscode:200&from=${ONE_YEAR_AGO.replace(/-/g,"")}`
+    );
+    const rows = JSON.parse(cdx);
+    if (!rows || rows.length < 2) return null;          // rows[0] is header
+    const ts = rows[1][0];
+    const archived = await fetchURL(`https://web.archive.org/web/${ts}/${url}`);
+    if (looksPaywalled(archived)) return null;
+    return archived;
+  } catch { return null; }
+}
+
+// Strategy 3 — Google AMP cache (works for some News Corp articles)
+async function tryAMPCache(url) {
+  try {
+    const host    = new URL(url).hostname.replace(/\./g, "-");
+    const ampUrl  = `https://${host}.cdn.ampproject.org/v/s/${url.replace(/^https?:\/\//,"")}`;
+    const html    = await fetchURL(ampUrl);
+    if (looksPaywalled(html)) return null;
+    return html;
+  } catch { return null; }
+}
+
+// Extract readable text from HTML (strips tags, collapses whitespace)
+function extractText(html) {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .replace(/&amp;/g,"&").replace(/&nbsp;/g," ").replace(/&quot;/g,'"')
+    .trim()
+    .slice(0, 3000);   // cap at 3k chars — enough for Claude to classify
+}
+
+async function fetchFullArticle(url) {
+  if (!url) return null;
+
+  // For non-paywalled URLs, try direct fetch first
+  if (!isPaywalled(url)) {
+    try {
+      const html = await fetchURL(url);
+      if (!looksPaywalled(html)) return extractText(html);
+    } catch {}
+  }
+
+  // Paywalled or direct fetch failed — try fallbacks in order
+  console.log(`      ↳ paywall detected, trying fallbacks…`);
+
+  const html =
+    await tryRemovePaywalls(url) ||
+    await tryWayback(url)        ||
+    await tryAMPCache(url);
+
+  return html ? extractText(html) : null;
+}
+
+// ─────────────────────────────────────────────────────────────
 //  RSS PARSER (no external deps)
 // ─────────────────────────────────────────────────────────────
 function parseRSS(xml) {
@@ -286,7 +392,15 @@ aiConfidence:
 Set relevant=false and aiConfidence="skip" if the article is not about a workforce reduction.`;
 
 async function classifyWithClaude(article) {
-  const text = `${article.title}\n\n${article.description}`;
+  // For paywalled sources, try to fetch the full article body before classifying.
+  // Falls back to title + RSS teaser if all bypass routes fail.
+  let fullBody = null;
+  if (article.link && (isPaywalled(article.link) || !article.description || article.description.length < 120)) {
+    fullBody = await fetchFullArticle(article.link);
+  }
+  const text = fullBody
+    ? `${article.title}\n\n${fullBody}`
+    : `${article.title}\n\n${article.description}`;
   const body = JSON.stringify({
     model:      "claude-haiku-4-5-20251001",
     max_tokens: 320,

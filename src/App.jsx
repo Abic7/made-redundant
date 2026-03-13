@@ -27,6 +27,7 @@ const SEED_DATA = [
   { company:"Atlassian",         industry:"Enterprise Software",  country:"Australia",  region:"Asia-Pacific",  date:"2026-03", headcount:1600,  aiConfidence:"genuine",     quote:"It would be disingenuous to pretend AI doesn't change the mix of skills we need or the number of roles required" },
   { company:"ANZ Bank",          industry:"Banking",              country:"Australia",  region:"Asia-Pacific",  date:"2025-09", headcount:3500,  aiConfidence:"washing",     quote:"This is not about profits — this is about what we need to do for a better company" },
   { company:"Telstra",           industry:"Telecommunications",   country:"Australia",  region:"Asia-Pacific",  date:"2024-05", headcount:2800,  aiConfidence:"washing",     quote:"AI is being used to improve half of Telstra's key processes" },
+  { company:"Telstra",           industry:"Telecommunications",   country:"Australia",  region:"Asia-Pacific",  date:"2026-02", headcount:600,   aiConfidence:"genuine",     quote:"AI-driven job cuts and offshoring of roles to lower-cost locations" },
   { company:"Commonwealth Bank", industry:"Banking",              country:"Australia",  region:"Asia-Pacific",  date:"2026-02", headcount:300,   aiConfidence:"genuine",     quote:"Priority is to transition people into higher-impact roles requiring greater expertise, judgement and empathy" },
   { company:"Optus",             industry:"Telecommunications",   country:"Australia",  region:"Asia-Pacific",  date:"2025-05", headcount:440,   aiConfidence:"restructure",  quote:"Making further changes to become a world class digital service provider that puts customers first" },
   { company:"Spark NZ",          industry:"Telecommunications",   country:"New Zealand",region:"Asia-Pacific",  date:"2024-08", headcount:190,   aiConfidence:"genuine",     quote:"Jobs will go as it outsources to AI and a networking partner" },
@@ -158,7 +159,7 @@ function Pill({ conf, small }) {
       display:"inline-flex", alignItems:"center", gap:5,
       padding: small ? "2px 8px" : "4px 12px", borderRadius:2,
       background:c.bg, border:`1px solid ${c.color}40`,
-      fontFamily:"'IBM Plex Mono',monospace",
+      fontFamily:"'Inter',system-ui,sans-serif",
       fontSize: small ? 9 : 10, color:c.color,
       letterSpacing:1, whiteSpace:"nowrap", textTransform:"uppercase",
     }}>
@@ -182,11 +183,11 @@ function LiveBadge({ status, nextRun, t }) {
         border:`1px solid ${t.borderMid}`, borderRadius:4, padding:"5px 13px", background:t.btnBg }}>
         <div style={{ width:6, height:6, borderRadius:"50%", background:cfg.dot,
           boxShadow:`0 0 7px ${cfg.dot}`, animation:cfg.pulse?"blink 2s infinite":"none" }} />
-        <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:10,
+        <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12,
           letterSpacing:3, color:t.textMid }}>{cfg.label}</span>
       </div>
       {nextRun && (
-        <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
+        <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
           color:t.textFaint, letterSpacing:1 }}>NEXT REFRESH {nextRun}</span>
       )}
     </div>
@@ -196,11 +197,11 @@ function LiveBadge({ status, nextRun, t }) {
 function Stat({ label, value, sub, accent, t }) {
   return (
     <div style={{ borderTop:`2px solid ${accent}`, paddingTop:16 }}>
-      <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:3,
+      <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11, letterSpacing:3,
         color:t.textDim, textTransform:"uppercase", marginBottom:8 }}>{label}</div>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:48,
         lineHeight:1, color:t.text, letterSpacing:2 }}>{value}</div>
-      {sub && <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
+      {sub && <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
         color:t.textFaint, marginTop:6 }}>{sub}</div>}
     </div>
   );
@@ -218,7 +219,7 @@ function ThemeToggle({ dark, onToggle, t }) {
         background: hovered ? t.surfaceHover : t.btnBg,
         border:`1px solid ${hovered ? t.borderMid : t.btnBorder}`,
         color:t.textMid, transition:"all 0.18s",
-        fontFamily:"'IBM Plex Mono',monospace", fontSize:10, letterSpacing:2,
+        fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, letterSpacing:2,
       }}>
       {dark ? <SunIcon size={13} /> : <MoonIcon size={13} />}
       {dark ? "LIGHT MODE" : "DARK MODE"}
@@ -284,7 +285,7 @@ function BubbleViz({ data, t }) {
               <line x1={PAD.left} y1={yOf(v)} x2={W-PAD.right} y2={yOf(v)}
                 stroke={t.border} strokeWidth={1} strokeDasharray="2,5" />
               <text x={PAD.left-6} y={yOf(v)+4} textAnchor="end"
-                fill={t.textDim} fontSize={8} fontFamily="IBM Plex Mono,monospace">{fmt(v)}</text>
+                fill={t.textDim} fontSize={8} fontFamily="Inter,system-ui,sans-serif">{fmt(v)}</text>
             </g>
           ))}
 
@@ -294,7 +295,7 @@ function BubbleViz({ data, t }) {
               <line x1={xOf(m)} y1={PAD.top} x2={xOf(m)} y2={H-PAD.bottom}
                 stroke={t.border} strokeWidth={1} strokeDasharray="2,6" />
               <text x={xOf(m)} y={H-PAD.bottom+14} textAnchor="middle"
-                fill={t.textDim} fontSize={9} fontFamily="IBM Plex Mono,monospace" letterSpacing={1}>
+                fill={t.textDim} fontSize={9} fontFamily="Inter,system-ui,sans-serif" letterSpacing={1}>
                 {fmtMon(m).toUpperCase()}
               </text>
             </g>
@@ -316,7 +317,7 @@ function BubbleViz({ data, t }) {
                 {r > 14 && (
                   <text x={cx} y={cy+4} textAnchor="middle" fill="#fff"
                     fontSize={Math.min(10, r * 0.52)} fontWeight={600}
-                    fontFamily="IBM Plex Mono,monospace" style={{ pointerEvents:"none" }}>
+                    fontFamily="Inter,system-ui,sans-serif" style={{ pointerEvents:"none" }}>
                     {d.company.split(/[\s/(]/)[0]}
                   </text>
                 )}
@@ -336,14 +337,14 @@ function BubbleViz({ data, t }) {
             boxShadow:`0 8px 32px ${c.glow}`
           }}>
             <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, color:t.text }}>{tip.d.company}</div>
-            <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:10, color:c.color, letterSpacing:1, marginTop:3 }}>
+            <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, color:c.color, letterSpacing:1, marginTop:3 }}>
               {fmt(tip.d.headcount)} JOBS · {tip.d.country}
             </div>
-            <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, color:t.textDim, letterSpacing:1, marginTop:2 }}>
+            <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11, color:t.textDim, letterSpacing:1, marginTop:2 }}>
               {fmtMon(tip.d.date)} · {tip.d.industry}
             </div>
             {tip.d.quote && (
-              <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
+              <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
                 color:t.textMid, marginTop:8, lineHeight:1.6, fontStyle:"italic" }}>
                 "{tip.d.quote}"
               </div>
@@ -365,7 +366,7 @@ function BarChart({ data, t }) {
       {rows.map(([ind, total], i) => (
         <div key={i}>
           <div style={{ display:"flex", justifyContent:"space-between", marginBottom:5 }}>
-            <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, color:t.textMid, letterSpacing:1 }}>
+            <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11, color:t.textMid, letterSpacing:1 }}>
               {ind.toUpperCase()}
             </span>
             <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, color:t.text, letterSpacing:2 }}>
@@ -398,7 +399,7 @@ function TimelineView({ data, t }) {
         return (
           <div key={month} style={{ display:"flex", gap:24, marginBottom:32 }}>
             <div style={{ width:72, flexShrink:0, paddingTop:3 }}>
-              <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
+              <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
                 letterSpacing:3, color:"#ff3b3b", textTransform:"uppercase" }}>{fmtMon(month)}</span>
             </div>
             <div style={{ flex:1, borderLeft:"1px solid rgba(255,59,59,0.22)", paddingLeft:24, position:"relative" }}>
@@ -413,7 +414,7 @@ function TimelineView({ data, t }) {
                       <div>
                         <div style={{ fontFamily:"'Bebas Neue',sans-serif",
                           fontSize:22, letterSpacing:2, color:t.text }}>{d.company}</div>
-                        <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
+                        <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
                           letterSpacing:2, color:t.textDim, marginTop:2 }}>
                           {d.industry.toUpperCase()} · {d.country.toUpperCase()}
                         </div>
@@ -426,7 +427,7 @@ function TimelineView({ data, t }) {
                     </div>
                     {d.quote && (
                       <div style={{ marginTop:10, paddingTop:10, borderTop:`1px solid ${t.border}`,
-                        fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
+                        fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
                         color:t.textDim, lineHeight:1.7, fontStyle:"italic" }}>
                         "{d.quote}"
                       </div>
@@ -478,7 +479,7 @@ function TableView({ data, t }) {
               const active = sortBy === key;
               return (
                 <th key={key} onClick={() => handleSort(key)}
-                  style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:3,
+                  style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11, letterSpacing:3,
                     color: active ? t.text : t.textDim, textTransform:"uppercase",
                     padding:"10px 16px", textAlign:"left", fontWeight:400,
                     cursor:"pointer", userSelect:"none", whiteSpace:"nowrap",
@@ -500,17 +501,17 @@ function TableView({ data, t }) {
               onMouseEnter={e=>e.currentTarget.style.background=t.surfaceHover}
               onMouseLeave={e=>e.currentTarget.style.background=i%2===0?t.surface:"transparent"}>
               <td style={{ padding:"12px 16px" }}>
-                <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontWeight:600,
+                <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontWeight:600,
                   fontSize:12, color:t.text }}>{d.company}</div>
               </td>
-              <td style={{ padding:"12px 16px", fontFamily:"'IBM Plex Mono',monospace",
-                fontSize:10, color:t.textMid }}>{d.industry}</td>
-              <td style={{ padding:"12px 16px", fontFamily:"'IBM Plex Mono',monospace",
-                fontSize:10, color:t.textMid }}>{d.country}</td>
+              <td style={{ padding:"12px 16px", fontFamily:"'Inter',system-ui,sans-serif",
+                fontSize:12, color:t.textMid }}>{d.industry}</td>
+              <td style={{ padding:"12px 16px", fontFamily:"'Inter',system-ui,sans-serif",
+                fontSize:12, color:t.textMid }}>{d.country}</td>
               <td style={{ padding:"12px 16px", fontFamily:"'Bebas Neue',sans-serif",
                 fontSize:20, color:"#ff3b3b", letterSpacing:2 }}>{fmt(d.headcount)}</td>
-              <td style={{ padding:"12px 16px", fontFamily:"'IBM Plex Mono',monospace",
-                fontSize:10, color:t.textDim, whiteSpace:"nowrap" }}>{fmtMon(d.date)}</td>
+              <td style={{ padding:"12px 16px", fontFamily:"'Inter',system-ui,sans-serif",
+                fontSize:12, color:t.textDim, whiteSpace:"nowrap" }}>{fmtMon(d.date)}</td>
               <td style={{ padding:"12px 16px" }}><Pill conf={d.aiConfidence} small /></td>
             </tr>
           ))}
@@ -525,7 +526,10 @@ function TableView({ data, t }) {
 // ─────────────────────────────────────────────────────────────
 export default function MadeRedundant() {
   const isMobile = useIsMobile();
-  const [isDark,         setIsDark]        = useState(true);
+  const [isDark, setIsDark] = useState(() => {
+    try { const s = localStorage.getItem("mr-theme"); if (s) return s === "dark"; } catch {}
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? true;
+  });
   const [data,           setData]          = useState(SEED_DATA);
   const [status,         setStatus]        = useState("seed");
   const [lastFetched,    setLastFetched]   = useState(null);
@@ -539,9 +543,19 @@ export default function MadeRedundant() {
 
   useEffect(() => { setTimeout(()=>setMounted(true), 60); }, []);
 
-  // Persist theme
-  useEffect(() => { try { localStorage.setItem("mr-theme", isDark?"dark":"light"); } catch {} }, [isDark]);
-  useEffect(() => { try { const s=localStorage.getItem("mr-theme"); if(s) setIsDark(s==="dark"); } catch {} }, []);
+  // Persist manual theme choice
+  useEffect(() => { try { localStorage.setItem("mr-theme", isDark ? "dark" : "light"); } catch {} }, [isDark]);
+
+  // Follow system preference changes unless the user has manually toggled
+  useEffect(() => {
+    const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
+    if (!mq?.addEventListener) return;
+    const sync = e => {
+      try { if (!localStorage.getItem("mr-theme")) setIsDark(e.matches); } catch { setIsDark(e.matches); }
+    };
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   const fetchSheet = useCallback(async () => {
     if (!SHEET_ID || !API_KEY) return;
@@ -568,11 +582,13 @@ export default function MadeRedundant() {
 
   const oneYearAgo = (() => { const d = new Date(); d.setFullYear(d.getFullYear()-1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; })();
 
-  const regions  = ["All", ...Array.from(new Set(data.map(d=>d.region))).sort()];
+  // All records within the rolling 1-year window — used for counts, regions, and as the base for all filters
+  const withinPeriod = data.filter(d => d.date >= oneYearAgo);
+
+  const regions  = ["All", ...Array.from(new Set(withinPeriod.map(d=>d.region))).sort()];
   const searchQ  = search.trim().toLowerCase();
-  const filtered = data
+  const filtered = withinPeriod
     .filter(d =>
-      d.date >= oneYearAgo &&
       (regionFilter==="All" || d.region===regionFilter) &&
       (confFilter==="All"   || d.aiConfidence===confFilter) &&
       (!searchQ || d.company.toLowerCase().includes(searchQ) || d.industry.toLowerCase().includes(searchQ))
@@ -584,10 +600,9 @@ export default function MadeRedundant() {
   const washingCount = filtered.filter(d=>d.aiConfidence==="washing").length;
   const companies    = filtered.length;
 
-  // Australia / NZ spotlight — same 1-year window + classification filter as the rest of the dashboard
-  const auData      = data.filter(d =>
+  // Australia / NZ spotlight — derived from withinPeriod so it's always the same 1-year window
+  const auData      = withinPeriod.filter(d =>
     (d.country==="Australia" || d.country==="New Zealand") &&
-    d.date >= oneYearAgo &&
     (confFilter==="All" || d.aiConfidence===confFilter)
   );
   const auJobs      = auData.reduce((s,d)=>s+d.headcount, 0);
@@ -602,11 +617,11 @@ export default function MadeRedundant() {
   return (
     <div style={{
       minHeight:"100vh", background:t.bg, color:t.text,
-      fontFamily:"'IBM Plex Mono',monospace",
+      fontFamily:"'Inter',system-ui,sans-serif",
       opacity:mounted?1:0,
       transition:"opacity 0.4s ease, background 0.35s ease, color 0.35s ease",
     }}>
-      <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
+      <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 
       {/* Noise overlay */}
       <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0, opacity:t.noiseOp,
@@ -620,7 +635,7 @@ export default function MadeRedundant() {
       <div style={{ position:"relative", zIndex:1, maxWidth:1240, margin:"0 auto", padding: isMobile ? "32px 16px" : "48px 24px" }}>
 
         {/* ══ MASTHEAD ══ */}
-        <div style={{ marginBottom:48 }}>
+        <div style={{ marginBottom: isMobile ? 28 : 48 }}>
 
           {/* Title row + theme toggle */}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start",
@@ -637,17 +652,17 @@ export default function MadeRedundant() {
           {/* Byline — Abi Chaudhuri + LinkedIn icon */}
           <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer"
             style={{ display:"inline-flex", alignItems:"center", gap:7, marginBottom:18,
-              fontFamily:"'IBM Plex Mono',monospace", fontSize:10, letterSpacing:3,
-              color:t.textDim, textDecoration:"none", transition:"color 0.15s" }}
+              fontFamily:"'Inter',system-ui,sans-serif", fontSize:13, letterSpacing:2,
+              fontWeight:700, color:"#ff3b3b", textDecoration:"none", transition:"color 0.15s" }}
             onMouseEnter={e=>e.currentTarget.style.color="#0a66c2"}
-            onMouseLeave={e=>e.currentTarget.style.color=t.textDim}>
+            onMouseLeave={e=>e.currentTarget.style.color="#ff3b3b"}>
             BY ABI CHAUDHURI
             <LinkedInIcon size={13}/>
           </a>
 
           {/* Subtitle row */}
           <div style={{ display:"flex", alignItems:"center", gap:24, flexWrap:"wrap" }}>
-            <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11, letterSpacing:0.5,
+            <p style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11, letterSpacing:0.5,
               color:t.textMid, margin:0, lineHeight:1.8, maxWidth:500 }}>
               Tracking every workforce reduction attributed to artificial intelligence.<br/>
               <span style={{ color:t.textFaint }}>
@@ -659,9 +674,10 @@ export default function MadeRedundant() {
         </div>
 
         {/* ══ STATS ══ */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(175px,1fr))",
-          gap:"0 48px", marginBottom:52,
-          borderTop:`1px solid ${t.border}`, paddingTop:32 }}>
+        <div style={{ display:"grid",
+          gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(auto-fit,minmax(160px,1fr))",
+          gap: isMobile ? "24px 20px" : "0 48px", marginBottom: isMobile ? 32 : 52,
+          borderTop:`1px solid ${t.border}`, paddingTop:28 }}>
           <Stat label="Total Jobs Lost"     value={fmt(totalJobs)}   sub="across all tracked companies"  accent="#ff3b3b"          t={t}/>
           <Stat label="Displaced by AI"     value={fmt(genuineJobs)} sub="roles directly automated away" accent="#ff7b3b"          t={t}/>
           <Stat label="AI Washing Suspects" value={washingCount}     sub="financially motivated cuts"    accent={CONF.washing.color} t={t}/>
@@ -671,13 +687,14 @@ export default function MadeRedundant() {
         {/* ══ AUSTRALIA SPOTLIGHT ══ */}
         {auCompanies > 0 && (
           <div style={{
-            marginBottom:28, padding:"16px 20px", borderRadius:4,
+            marginBottom:28, padding: isMobile ? "16px" : "16px 20px", borderRadius:4,
             background:"rgba(0,160,100,0.06)", border:"1px solid rgba(0,180,110,0.18)",
-            display:"flex", alignItems:"center", gap:24, flexWrap:"wrap",
+            display:"flex", flexDirection: isMobile ? "column" : "row",
+            alignItems: isMobile ? "flex-start" : "center", gap: isMobile ? 12 : 24,
           }}>
             <span style={{ fontSize:18 }}>🇦🇺</span>
             <div style={{ flex:1, minWidth:160 }}>
-              <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:3,
+              <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11, letterSpacing:3,
                 color:"rgba(0,200,120,0.7)", textTransform:"uppercase", marginBottom:4 }}>
                 Australia &amp; NZ Spotlight · Last 12 months
               </div>
@@ -685,19 +702,19 @@ export default function MadeRedundant() {
                 <div>
                   <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28,
                     color:"#00c878", letterSpacing:2 }}>{fmt(auJobs)}</span>
-                  <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
+                  <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
                     color:"rgba(0,200,120,0.55)", marginLeft:8, letterSpacing:1 }}>TOTAL JOBS</span>
                 </div>
                 <div>
                   <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28,
                     color:"#00c878", letterSpacing:2 }}>{fmt(auGenuine)}</span>
-                  <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
+                  <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
                     color:"rgba(0,200,120,0.55)", marginLeft:8, letterSpacing:1 }}>DISPLACED BY AI</span>
                 </div>
                 <div>
                   <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28,
                     color:"#00c878", letterSpacing:2 }}>{auCompanies}</span>
-                  <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
+                  <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
                     color:"rgba(0,200,120,0.55)", marginLeft:8, letterSpacing:1 }}>COMPANIES</span>
                 </div>
               </div>
@@ -705,7 +722,7 @@ export default function MadeRedundant() {
             <button onClick={() => setRegionFilter("Asia-Pacific")}
               style={{ padding:"6px 16px", borderRadius:2, cursor:"pointer",
                 background:"rgba(0,180,110,0.1)", border:"1px solid rgba(0,180,110,0.3)",
-                color:"#00c878", fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
+                color:"#00c878", fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
                 letterSpacing:2, whiteSpace:"nowrap", flexShrink:0 }}>
               FILTER REGION ↗
             </button>
@@ -713,24 +730,25 @@ export default function MadeRedundant() {
         )}
 
         {/* ══ FILTERS ══ */}
-        <div style={{ display:"flex", gap:20, flexWrap:"wrap", alignItems:"center",
+        <div style={{ display:"flex", flexDirection: isMobile ? "column" : "row",
+          gap: isMobile ? 12 : 20, flexWrap:"wrap", alignItems: isMobile ? "stretch" : "center",
           marginBottom:28, paddingBottom:24, borderBottom:`1px solid ${t.border}` }}>
 
           {/* Search */}
-          <div style={{ position:"relative", flexShrink:0 }}>
+          <div style={{ position:"relative", flexShrink:0, width: isMobile ? "100%" : "auto" }}>
             <span style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)",
-              fontSize:11, color:t.textDim, pointerEvents:"none" }}>⌕</span>
+              fontSize:13, color:t.textDim, pointerEvents:"none" }}>⌕</span>
             <input
               type="text"
               placeholder="Search company or industry…"
               value={search}
               onChange={e => setSearch(e.target.value)}
               style={{
-                paddingLeft:26, paddingRight:search ? 28 : 12, paddingTop:5, paddingBottom:5,
+                paddingLeft:30, paddingRight:search ? 30 : 12, paddingTop:7, paddingBottom:7,
                 background:t.btnBg, border:`1px solid ${search ? t.borderMid : t.btnBorder}`,
-                borderRadius:2, color:t.text, outline:"none",
-                fontFamily:"'IBM Plex Mono',monospace", fontSize:10, letterSpacing:1,
-                width:220, transition:"border-color 0.15s",
+                borderRadius:4, color:t.text, outline:"none",
+                fontFamily:"'Inter',system-ui,sans-serif", fontSize:13, letterSpacing:0,
+                width: isMobile ? "100%" : 240, transition:"border-color 0.15s",
               }}
             />
             {search && (
@@ -752,11 +770,11 @@ export default function MadeRedundant() {
                     background: active ? (color?`${color}22`:t.surfaceHover) : t.btnBg,
                     border:`1px solid ${active?(color||t.borderMid):t.btnBorder}`,
                     color: active ? (color||t.text) : t.textMid,
-                    fontFamily:"'IBM Plex Mono',monospace", fontSize:10, letterSpacing:2,
+                    fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, letterSpacing:2,
                   }}>
                   {label.toUpperCase()}
                   <span style={{ marginLeft:6, opacity:0.45, fontSize:9 }}>
-                    ({key==="All"?data.length:data.filter(d=>d.aiConfidence===key).length})
+                    ({key==="All"?withinPeriod.length:withinPeriod.filter(d=>d.aiConfidence===key).length})
                   </span>
                 </button>
               );
@@ -765,7 +783,7 @@ export default function MadeRedundant() {
 
           {/* Region filter */}
           <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-            <span style={{ fontSize:9, letterSpacing:3, color:t.textFaint }}>REGION:</span>
+            <span style={{ fontSize:11, letterSpacing:3, color:t.textFaint }}>REGION:</span>
             {regions.map(r => (
               <button key={r} onClick={()=>setRegionFilter(r)}
                 style={{
@@ -773,28 +791,33 @@ export default function MadeRedundant() {
                   background: regionFilter===r?"rgba(255,59,59,0.1)":t.btnBg,
                   border:`1px solid ${regionFilter===r?"#ff3b3b40":t.btnBorder}`,
                   color: regionFilter===r?"#ff3b3b":t.textDim,
-                  fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:1,
+                  fontFamily:"'Inter',system-ui,sans-serif", fontSize:11, letterSpacing:1,
                 }}>{r.toUpperCase()}</button>
             ))}
           </div>
         </div>
 
         {/* ══ TABS ══ */}
-        <div style={{ display:"flex", marginBottom:28, borderBottom:`1px solid ${t.border}` }}>
+        <div style={{ display:"flex", marginBottom:28, borderBottom:`1px solid ${t.border}`,
+          overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
           {["overview","timeline","table"].map(tb => (
             <button key={tb} onClick={()=>setTab(tb)}
               style={{
-                padding:"10px 24px", background:"none", border:"none",
+                padding: isMobile ? "10px 18px" : "10px 24px",
+                background:"none", border:"none", flexShrink:0,
                 borderBottom:`2px solid ${tab===tb?"#ff3b3b":"transparent"}`,
                 color:tab===tb?t.text:t.textDim,
-                fontFamily:"'IBM Plex Mono',monospace", fontSize:10, letterSpacing:3,
-                cursor:"pointer", textTransform:"uppercase", marginBottom:-1, transition:"all 0.15s",
+                fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, fontWeight:600,
+                letterSpacing:2, cursor:"pointer", textTransform:"uppercase",
+                marginBottom:-1, transition:"all 0.15s",
               }}>{tb}</button>
           ))}
-          <div style={{ marginLeft:"auto", alignSelf:"center",
-            fontSize:9, letterSpacing:2, color:t.textFaint }}>
-            {filtered.length} RECORDS · {fmt(totalJobs)} JOBS
-          </div>
+          {!isMobile && (
+            <div style={{ marginLeft:"auto", alignSelf:"center",
+              fontSize:11, letterSpacing:2, color:t.textFaint, whiteSpace:"nowrap", paddingLeft:16 }}>
+              {filtered.length} RECORDS · {fmt(totalJobs)} JOBS
+            </div>
+          )}
         </div>
 
         {/* ══ OVERVIEW ══ */}
@@ -802,13 +825,13 @@ export default function MadeRedundant() {
           <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 300px", gap:20 }}>
             <div style={{ border:`1px solid ${t.border}`, borderRadius:4,
               padding:24, background:t.surface }}>
-              <div style={{ fontSize:9, letterSpacing:3, color:t.textDim,
+              <div style={{ fontSize:11, letterSpacing:3, color:t.textDim,
                 marginBottom:20, textTransform:"uppercase" }}>Timeline · Bubble Size = Headcount</div>
               <BubbleViz data={filtered} t={t}/>
             </div>
             <div style={{ border:`1px solid ${t.border}`, borderRadius:4,
               padding:24, background:t.surface }}>
-              <div style={{ fontSize:9, letterSpacing:3, color:t.textDim,
+              <div style={{ fontSize:11, letterSpacing:3, color:t.textDim,
                 marginBottom:20, textTransform:"uppercase" }}>Impact by Industry</div>
               <BarChart data={filtered} t={t}/>
             </div>
@@ -828,7 +851,7 @@ export default function MadeRedundant() {
           <div style={{ border:`1px solid ${t.border}`, borderRadius:4,
             background:t.surface, overflow:"hidden" }}>
             <TableView data={filtered} t={t}/>
-            <div style={{ padding:"12px 16px", fontSize:9, letterSpacing:2,
+            <div style={{ padding:"12px 16px", fontSize:11, letterSpacing:2,
               color:t.textFaint, borderTop:`1px solid ${t.border}` }}>
               {filtered.length} COMPANIES · {fmt(totalJobs)} TOTAL POSITIONS
             </div>
@@ -839,12 +862,12 @@ export default function MadeRedundant() {
         <div style={{ marginTop:48, paddingTop:20, borderTop:`1px solid ${t.border}`,
           display:"flex", justifyContent:"space-between", alignItems:"center",
           flexWrap:"wrap", gap:12 }}>
-          <span style={{ fontSize:9, letterSpacing:2, color:t.textFaint }}>
+          <span style={{ fontSize:11, letterSpacing:2, color:t.textFaint }}>
             SOURCES: LAYOFFS.FYI · PROGRAMS.COM · RATIONALFX · CHALLENGER GRAY &amp; CHRISTMAS
           </span>
           <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer"
             style={{ display:"inline-flex", alignItems:"center", gap:7,
-              fontSize:9, letterSpacing:2, color:t.textFaint, textDecoration:"none",
+              fontSize:11, letterSpacing:2, color:t.textFaint, textDecoration:"none",
               transition:"color 0.15s" }}
             onMouseEnter={e=>e.currentTarget.style.color="#0a66c2"}
             onMouseLeave={e=>e.currentTarget.style.color=t.textFaint}>
