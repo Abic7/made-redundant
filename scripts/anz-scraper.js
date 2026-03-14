@@ -102,6 +102,43 @@ const RSS_SOURCES = [
   { name:"Stuff NZ Business",        url:"https://www.stuff.co.nz/business/rss",             country:"New Zealand" },
   { name:"RNZ Business",             url:"https://feeds.rnz.co.nz/businessrss.xml",          country:"New Zealand" },
   { name:"Newsroom NZ",              url:"https://newsroom.co.nz/feed/",                     country:"New Zealand" },
+
+  // ── LATAM — English-language (layoffs/tech beat with LATAM coverage)
+  // Reddit r/layoffs — real-time employee reports, often pre-press
+  { name:"Reddit r/layoffs",         url:"https://www.reddit.com/r/layoffs.rss",             country:"" },
+  // Reddit r/AskLatinAmerica — local perspectives before official announcements
+  { name:"Reddit r/AskLatinAmerica", url:"https://www.reddit.com/r/AskLatinAmerica.rss",    country:"" },
+  // Crunchbase News — tracks US tech layoffs with massive LATAM footprints
+  { name:"Crunchbase News",          url:"https://news.crunchbase.com/feed/",                country:"" },
+  // Upstream Online — energy sector, Petrobras & regional giants
+  { name:"Upstream Online",          url:"https://www.upstreamonline.com/rss",               country:"Brazil" },
+  // TechCrunch LATAM tag
+  { name:"TechCrunch LATAM",         url:"https://techcrunch.com/tag/latin-america/feed/",   country:"" },
+  // Rest of World — global tech impact stories, strong LATAM coverage
+  { name:"Rest of World",            url:"https://restofworld.org/feed/",                    country:"" },
+
+  // ── LATAM — Spanish-language mastheads
+  // Infobae (Argentina, MX, Colombia, US) — major tech/business layoff reporter
+  { name:"Infobae — Tech",           url:"https://www.infobae.com/feeds/rss/tecno/",         country:"Argentina" },
+  { name:"Infobae — Economy",        url:"https://www.infobae.com/feeds/rss/economia/",      country:"Argentina" },
+  // El Economista (Mexico) — primary tech layoff tracker in MX
+  { name:"El Economista MX",         url:"https://www.eleconomista.com.mx/rss/tecnologia.xml", country:"Mexico" },
+  // Expansión (Mexico/LATAM) — Fortune-style business coverage
+  { name:"Expansión MX",             url:"https://expansion.mx/rss/tecnologia",              country:"Mexico" },
+  // El País América — Spanish-language with broad LATAM desk
+  { name:"El País América",          url:"https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/america/portada", country:"" },
+
+  // ── LATAM — Portuguese-language (Brazil)
+  // Folha de São Paulo — primary BR business/tech paper
+  { name:"Folha de S.Paulo — Tech",  url:"https://feeds.folha.uol.com.br/tec/rss091.xml",   country:"Brazil" },
+  // Valor Econômico — Brazilian financial newspaper (FT equivalent)
+  { name:"Valor Econômico",          url:"https://valor.globo.com/rss/",                     country:"Brazil" },
+  // Exame — major Brazilian business magazine, strong tech layoff coverage
+  { name:"Exame — Tech",             url:"https://exame.com/tecnologia/feed/",               country:"Brazil" },
+  // Startups.com.br — tracks Brazilian startup layoffs (HeyFutureNexus-adjacent)
+  { name:"Startups.com.br",          url:"https://startups.com.br/feed/",                    country:"Brazil" },
+  // Olhar Digital — tech news, often breaks LATAM fintech job cuts
+  { name:"Olhar Digital",            url:"https://olhardigital.com.br/feed/",                country:"Brazil" },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -125,29 +162,58 @@ const ANZ_DOMAINS = [
   "nzherald.co.nz","stuff.co.nz","rnz.co.nz","newsroom.co.nz",
 ].join(",");
 
+const LATAM_DOMAINS = [
+  "infobae.com","eleconomista.com.mx","expansion.mx","elpais.com",
+  "folha.uol.com.br","valor.globo.com","exame.com","startups.com.br",
+  "olhardigital.com.br","restofworld.org","techcrunch.com",
+  "crunchbase.com","upstreamonline.com","reddit.com",
+].join(",");
+
 const NEWSAPI_QUERIES = [
-  // Broad layoff + AI terms across all ANZ domains
+  // ── ANZ queries
   { q:"layoffs redundancies AI artificial intelligence jobs Australia",          domains: ANZ_DOMAINS },
   { q:"workforce reduction automation roles eliminated Australia",               domains: ANZ_DOMAINS },
   { q:"headcount cut AI technology jobs Australia",                              domains: ANZ_DOMAINS },
-  // Tech-press specific — ITNews, ZDNet, CRN cover vendor/enterprise AI layoffs
   { q:"redundan* AI automation technology jobs Australia OR \"New Zealand\"",    domains: ANZ_DOMAINS },
-  // Catch articles that don't use the word "AI" but describe automation
   { q:"\"made redundant\" outsourcing automation technology Australia",          language:"en" },
-  // NZ-specific pass
   { q:"layoffs redundancies AI jobs \"New Zealand\"",                            domains: ANZ_DOMAINS },
+
+  // ── LATAM — English-language queries
+  { q:"layoffs AI automation jobs \"Latin America\" OR Brazil OR Mexico OR Argentina OR Colombia", language:"en" },
+  { q:"workforce reduction AI technology \"South America\" OR \"Latin America\"",                  language:"en" },
+  { q:"tech layoffs Brazil OR Mexico OR Argentina OR Colombia OR Chile AI",                        language:"en" },
+  { q:"Petrobras OR \"Mercado Libre\" OR Nubank OR Rappi layoffs jobs cuts AI",                    language:"en" },
+
+  // ── LATAM — Spanish queries
+  { q:"despidos inteligencia artificial empleos Brasil Mexico Argentina Colombia", language:"es" },
+  { q:"reducción de personal automatización tecnología empleos despidos",          language:"es" },
+  { q:"layoffs IA tecnología trabajos \"América Latina\"",                         language:"es" },
+
+  // ── LATAM — Portuguese (Brazil) queries
+  { q:"demissões inteligência artificial empregos Brasil tecnologia",              language:"pt" },
+  { q:"corte de empregos automação IA tecnologia Brasil",                          language:"pt" },
+  { q:"layoffs demissões startups fintechs Brasil",                                language:"pt" },
 ];
 
 // ─────────────────────────────────────────────────────────────
 //  LAYOFF KEYWORDS
 // ─────────────────────────────────────────────────────────────
 const LAYOFF_KW = [
+  // ── English
   "redund","layoff","lay off","job cut","headcount","workforce reduction",
   "retrench","restructur","roles eliminat","position eliminat","staff cut",
   "job loss","made redundant","let go","downsiz","job shed",
-  // Outsourcing/offshoring — common in ANZ telecoms/banking (e.g. Telstra → India)
   "outsourc","offshor","axe","axes","axing","shed jobs","shed role",
   "cut jobs","cut role","eliminat","automat","job loss","role loss",
+  // ── Spanish (LATAM)
+  "despido","despidos","desempleo","reducción de personal","recorte de empleo",
+  "recorte de personal","reducción de plantilla","cese","cesantía",
+  "automatización","inteligencia artificial","recorte","reestructuración",
+  "externalización","subcontratación","tercerización",
+  // ── Portuguese (Brazil)
+  "demissão","demissões","corte de emprego","corte de vagas","redução de quadro",
+  "automação","inteligência artificial","reestruturação","terceirização",
+  "downsizing","layoff","enxugamento","dispensa em massa",
 ];
 
 function isLayoffRelated(text) {
