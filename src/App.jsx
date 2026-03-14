@@ -434,9 +434,10 @@ class ErrorBoundary extends React.Component {
 // ─────────────────────────────────────────────────────────────
 
 // Country name (as used in data) → ISO 3166-1 numeric
+// Keys must exactly match country names used in SEED_DATA / Google Sheet rows
 const COUNTRY_ISO = {
-  "USA":          840, "United States": 840,
-  "UK":           826, "United Kingdom": 826,
+  "USA":          840,
+  "UK":           826,
   "Australia":     36,
   "New Zealand":  554,
   "Austria":       40,
@@ -454,7 +455,8 @@ const COUNTRY_ISO = {
   "South Korea":  410,
   "Ireland":      372,
 };
-const ISO_REVERSE = Object.fromEntries(Object.entries(COUNTRY_ISO).map(([k,v])=>[v,k]));
+// ISO numeric (string key) → data country name
+const ISO_REVERSE = Object.fromEntries(Object.entries(COUNTRY_ISO).map(([name, iso]) => [String(iso), name]));
 
 function lerp(a, b, t) {
   return Math.round(a + (b - a) * t);
@@ -493,7 +495,7 @@ function ChoroplethMap({ data, t, impactType, isMobile, isDark }) {
   const strokeColor = isDark ? "#32324a" : "#a09c96";
 
   const getCountryColor = (geoId) => {
-    const name  = ISO_REVERSE[parseInt(geoId)];
+    const name  = ISO_REVERSE[String(parseInt(geoId))];
     const entry = name && countryMap[name];
     if (!entry) return noDataColor;
     // Scale from dim (low) → accent (high) with sqrt curve for better distribution
@@ -524,8 +526,7 @@ function ChoroplethMap({ data, t, impactType, isMobile, isDark }) {
         style={{ width:"100%", height: isMobile ? 260 : 420, background: mapBg, borderRadius:4 }}>
         <Geographies geography={worldData}>
           {({ geographies }) => geographies.map(geo => {
-            const isoNum = parseInt(geo.id);
-            const name   = ISO_REVERSE[isoNum];
+            const name   = ISO_REVERSE[String(parseInt(geo.id))];
             const entry  = name && countryMap[name];
             return (
               <Geography
