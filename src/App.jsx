@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
-import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
+import React, { useState, useEffect, useCallback, useSyncExternalStore } from "react";
+import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 
 function useIsMobile(breakpoint = 768) {
   return useSyncExternalStore(
@@ -409,6 +409,26 @@ function TableView({ data, t }) {
 }
 
 // ─────────────────────────────────────────────────────────────
+//  ERROR BOUNDARY (prevents map crash from killing whole page)
+// ─────────────────────────────────────────────────────────────
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(e) { return { error: e }; }
+  render() {
+    if (this.state.error) {
+      const t = this.props.t || {};
+      return (
+        <div style={{ padding:32, textAlign:"center", color: t.textMid || "#888",
+          fontFamily:"'Inter',system-ui,sans-serif", fontSize:13, letterSpacing:1 }}>
+          Map failed to load — {String(this.state.error.message)}
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 //  CHOROPLETH MAP
 // ─────────────────────────────────────────────────────────────
 const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
@@ -501,36 +521,34 @@ function ChoroplethMap({ data, t, impactType, isMobile, isDark }) {
         projection="geoMercator"
         projectionConfig={{ scale: isMobile ? 90 : 140, center:[10, 20] }}
         style={{ width:"100%", height: isMobile ? 260 : 420 }}>
-        <ZoomableGroup zoom={1} minZoom={0.8} maxZoom={6}>
-          <Geographies geography={GEO_URL}>
-            {({ geographies }) => geographies.map(geo => {
-              const isoNum = parseInt(geo.id);
-              const name   = ISO_REVERSE[isoNum];
-              const entry  = name && countryMap[name];
-              return (
-                <Geography
-                  key={geo.rsmKey}
-                  geography={geo}
-                  fill={getCountryColor(geo.id)}
-                  stroke={strokeColor}
-                  strokeWidth={0.4}
-                  style={{
-                    default:  { outline:"none" },
-                    hover:    { outline:"none", opacity:0.8, cursor: entry ? "pointer" : "default" },
-                    pressed:  { outline:"none" },
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!entry) return;
-                    setTooltip({ name, entry });
-                    setPos({ x: e.clientX, y: e.clientY });
-                  }}
-                  onMouseMove={(e)  => setPos({ x: e.clientX, y: e.clientY })}
-                  onMouseLeave={()  => setTooltip(null)}
-                />
-              );
-            })}
-          </Geographies>
-        </ZoomableGroup>
+        <Geographies geography={GEO_URL}>
+          {({ geographies }) => geographies.map(geo => {
+            const isoNum = parseInt(geo.id);
+            const name   = ISO_REVERSE[isoNum];
+            const entry  = name && countryMap[name];
+            return (
+              <Geography
+                key={geo.rsmKey}
+                geography={geo}
+                fill={getCountryColor(geo.id)}
+                stroke={strokeColor}
+                strokeWidth={0.4}
+                style={{
+                  default:  { outline:"none" },
+                  hover:    { outline:"none", opacity:0.8, cursor: entry ? "pointer" : "default" },
+                  pressed:  { outline:"none" },
+                }}
+                onMouseEnter={(e) => {
+                  if (!entry) return;
+                  setTooltip({ name, entry });
+                  setPos({ x: e.clientX, y: e.clientY });
+                }}
+                onMouseMove={(e)  => setPos({ x: e.clientX, y: e.clientY })}
+                onMouseLeave={()  => setTooltip(null)}
+              />
+            );
+          })}
+        </Geographies>
       </ComposableMap>
 
       {/* Tooltip */}
@@ -928,9 +946,11 @@ export default function MadeRedundant() {
               Global Impact · {impactType === "offshore" ? "Offshoring" : "AI Displacement"} · Last 12 Months
             </div>
             <div style={{ fontSize:11, color:t.textFaint, marginBottom:20, letterSpacing:1 }}>
-              Scroll to zoom · drag to pan · hover country for details
+              Hover country for details
             </div>
-            <ChoroplethMap data={filtered} t={t} impactType={impactType} isMobile={isMobile} isDark={isDark}/>
+            <ErrorBoundary t={t}>
+              <ChoroplethMap data={filtered} t={t} impactType={impactType} isMobile={isMobile} isDark={isDark}/>
+            </ErrorBoundary>
           </div>
         )}
 
