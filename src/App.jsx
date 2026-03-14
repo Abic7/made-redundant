@@ -160,7 +160,7 @@ function Pill({ conf, small }) {
       padding: small ? "2px 8px" : "4px 12px", borderRadius:2,
       background:c.bg, border:`1px solid ${c.color}40`,
       fontFamily:"'Inter',system-ui,sans-serif",
-      fontSize: small ? 9 : 10, color:c.color,
+      fontSize: small ? 11 : 12, color:c.color,
       letterSpacing:1, whiteSpace:"nowrap", textTransform:"uppercase",
     }}>
       <span style={{ width:5, height:5, borderRadius:"50%", background:c.color,
@@ -187,7 +187,7 @@ function LiveBadge({ status, nextRun, t }) {
           letterSpacing:3, color:t.textMid }}>{cfg.label}</span>
       </div>
       {nextRun && (
-        <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
+        <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12,
           color:t.textFaint, letterSpacing:1 }}>NEXT REFRESH {nextRun}</span>
       )}
     </div>
@@ -197,11 +197,11 @@ function LiveBadge({ status, nextRun, t }) {
 function Stat({ label, value, sub, accent, t }) {
   return (
     <div style={{ borderTop:`2px solid ${accent}`, paddingTop:16 }}>
-      <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11, letterSpacing:3,
+      <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, letterSpacing:3,
         color:t.textDim, textTransform:"uppercase", marginBottom:8 }}>{label}</div>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:48,
         lineHeight:1, color:t.text, letterSpacing:2 }}>{value}</div>
-      {sub && <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
+      {sub && <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12,
         color:t.textFaint, marginTop:6 }}>{sub}</div>}
     </div>
   );
@@ -231,127 +231,99 @@ function ThemeToggle({ dark, onToggle, t }) {
 //  CHART COMPONENTS
 // ─────────────────────────────────────────────────────────────
 
-function BubbleViz({ data, t }) {
+function MonthlyBarChart({ data, t }) {
   const [tip, setTip] = useState(null);
 
-  const allDates = [...new Set(data.map(d => d.date))].filter(Boolean).sort();
-  const months   = allDates.length ? allDates : ["2025-05","2025-09","2025-12","2026-01","2026-02","2026-03"];
-
-  const W   = Math.max(700, months.length * 130);
-  const H   = 300;
-  const PAD = { top:16, right:24, bottom:36, left:56 };
-  const plotW = W - PAD.left - PAD.right;
-  const plotH = H - PAD.top  - PAD.bottom;
-
-  // X: evenly spaced months
-  const xOf = date => {
-    const i = months.indexOf(date);
-    if (months.length === 1) return PAD.left + plotW / 2;
-    return PAD.left + (i / (months.length - 1)) * plotW;
-  };
-
-  // Y: log scale — larger headcount = higher up
-  const headcounts = data.map(d => d.headcount).filter(h => h > 0);
-  const logMin = Math.log(Math.max(Math.min(...headcounts, 100), 1));
-  const logMax = Math.log(Math.max(...headcounts, 1000));
-  const yOf = h => PAD.top + (1 - (Math.log(Math.max(h,1)) - logMin) / (logMax - logMin)) * plotH;
-
-  // X jitter: spread overlapping dots within a month column
-  const byMonth = {};
-  data.forEach(d => { (byMonth[d.date] = byMonth[d.date] || []).push(d); });
-  const jitterX = {};
-  Object.entries(byMonth).forEach(([m, items]) => {
-    const spread = Math.min(50, items.length * 10);
-    items.forEach((d, i) => {
-      jitterX[d.company] = items.length === 1
-        ? 0
-        : ((i / (items.length - 1)) - 0.5) * spread;
-    });
+  // Group by month + classification
+  const monthMap = {};
+  data.forEach(d => {
+    if (!d.date) return;
+    if (!monthMap[d.date]) monthMap[d.date] = { genuine:0, washing:0, restructure:0 };
+    monthMap[d.date][d.aiConfidence] = (monthMap[d.date][d.aiConfidence] || 0) + d.headcount;
   });
-
-  // Y axis ticks
-  const yTicks = [100, 500, 1000, 5000, 10000, 20000].filter(v =>
-    Math.log(v) >= logMin - 0.5 && Math.log(v) <= logMax + 0.5
+  const months = Object.keys(monthMap).sort();
+  if (!months.length) return (
+    <div style={{ color:t.textFaint, fontFamily:"'Inter',system-ui,sans-serif", fontSize:13, padding:"32px 0", textAlign:"center" }}>
+      No data for current filters
+    </div>
   );
+
+  const totals  = months.map(m => monthMap[m].genuine + monthMap[m].washing + monthMap[m].restructure);
+  const maxTotal = Math.max(...totals, 1);
+  const BAR_H   = 180;
+  const LAYERS  = [["restructure", CONF.restructure.color], ["washing", CONF.washing.color], ["genuine", CONF.genuine.color]];
 
   return (
     <div style={{ position:"relative" }}>
-      <div style={{ overflowX:"auto" }}>
-        <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display:"block", minWidth:500 }}>
-
-          {/* Y gridlines + labels */}
-          {yTicks.map(v => (
-            <g key={v}>
-              <line x1={PAD.left} y1={yOf(v)} x2={W-PAD.right} y2={yOf(v)}
-                stroke={t.border} strokeWidth={1} strokeDasharray="2,5" />
-              <text x={PAD.left-6} y={yOf(v)+4} textAnchor="end"
-                fill={t.textDim} fontSize={8} fontFamily="Inter,system-ui,sans-serif">{fmt(v)}</text>
-            </g>
-          ))}
-
-          {/* X gridlines + month labels */}
-          {months.map(m => (
-            <g key={m}>
-              <line x1={xOf(m)} y1={PAD.top} x2={xOf(m)} y2={H-PAD.bottom}
-                stroke={t.border} strokeWidth={1} strokeDasharray="2,6" />
-              <text x={xOf(m)} y={H-PAD.bottom+14} textAnchor="middle"
-                fill={t.textDim} fontSize={9} fontFamily="Inter,system-ui,sans-serif" letterSpacing={1}>
-                {fmtMon(m).toUpperCase()}
-              </text>
-            </g>
-          ))}
-
-          {/* Bubbles — sorted smallest first so big ones don't swallow tiny ones */}
-          {[...data].sort((a,b) => b.headcount - a.headcount).map((d, i) => {
-            const cx = xOf(d.date) + (jitterX[d.company] || 0);
-            const cy = yOf(d.headcount);
-            const r  = Math.max(7, Math.sqrt(d.headcount / Math.max(...data.map(x=>x.headcount), 1)) * 44);
-            const c  = CONF[d.aiConfidence] || CONF.restructure;
-            return (
-              <g key={i} style={{ cursor:"pointer" }}
-                onMouseEnter={e => setTip({ d, x:e.clientX, y:e.clientY })}
-                onMouseMove={e  => setTip(prev => prev ? { ...prev, x:e.clientX, y:e.clientY } : null)}
-                onMouseLeave={() => setTip(null)}>
-                <circle cx={cx} cy={cy} r={r+5} fill={c.color} opacity={0.07} />
-                <circle cx={cx} cy={cy} r={r}   fill={c.color} opacity={0.85} />
-                {r > 14 && (
-                  <text x={cx} y={cy+4} textAnchor="middle" fill="#fff"
-                    fontSize={Math.min(10, r * 0.52)} fontWeight={600}
-                    fontFamily="Inter,system-ui,sans-serif" style={{ pointerEvents:"none" }}>
-                    {d.company.split(/[\s/(]/)[0]}
-                  </text>
-                )}
-              </g>
-            );
-          })}
-        </svg>
+      {/* Chart */}
+      <div style={{ display:"flex", alignItems:"flex-end", gap:6 }}>
+        {months.map((month, mi) => {
+          const mo    = monthMap[month];
+          const total = totals[mi];
+          const barH  = Math.max(4, (total / maxTotal) * BAR_H);
+          return (
+            <div key={month} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", cursor:"pointer", minWidth:0 }}
+              onMouseEnter={e => setTip({ month, mo, total, x:e.clientX, y:e.clientY })}
+              onMouseMove={e  => setTip(prev => prev ? { ...prev, x:e.clientX, y:e.clientY } : null)}
+              onMouseLeave={() => setTip(null)}>
+              {/* Total label above bar */}
+              <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, color:t.textDim, marginBottom:4, whiteSpace:"nowrap" }}>
+                {fmt(total)}
+              </div>
+              {/* Stacked bar */}
+              <div style={{ width:"100%", height:barH, display:"flex", flexDirection:"column", borderRadius:"2px 2px 0 0", overflow:"hidden" }}>
+                {LAYERS.map(([key, color]) => {
+                  const seg = mo[key] || 0;
+                  if (!seg) return null;
+                  return <div key={key} style={{ width:"100%", flex:`${seg} 0 0`, background:color, opacity:0.88 }} />;
+                })}
+              </div>
+              {/* Month label */}
+              <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, color:t.textDim,
+                letterSpacing:0.5, textAlign:"center", marginTop:6, lineHeight:1.2 }}>
+                {fmtMon(month).replace(" ", "\n")}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {tip && (() => {
-        const c = CONF[tip.d.aiConfidence] || CONF.restructure;
-        return (
-          <div style={{
-            position:"fixed", left:tip.x+14, top:tip.y-90, zIndex:999, pointerEvents:"none",
-            background:t.tooltipBg, border:`1px solid ${c.color}`,
-            borderRadius:4, padding:"12px 16px", maxWidth:290,
-            boxShadow:`0 8px 32px ${c.glow}`
-          }}>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, color:t.text }}>{tip.d.company}</div>
-            <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, color:c.color, letterSpacing:1, marginTop:3 }}>
-              {fmt(tip.d.headcount)} JOBS · {tip.d.country}
-            </div>
-            <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11, color:t.textDim, letterSpacing:1, marginTop:2 }}>
-              {fmtMon(tip.d.date)} · {tip.d.industry}
-            </div>
-            {tip.d.quote && (
-              <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
-                color:t.textMid, marginTop:8, lineHeight:1.6, fontStyle:"italic" }}>
-                "{tip.d.quote}"
-              </div>
-            )}
+      {/* Legend */}
+      <div style={{ display:"flex", gap:16, marginTop:20, flexWrap:"wrap" }}>
+        {Object.entries(CONF).map(([key, c]) => (
+          <div key={key} style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <div style={{ width:10, height:10, borderRadius:1, background:c.color, opacity:0.88, flexShrink:0 }} />
+            <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, color:t.textDim, letterSpacing:1 }}>
+              {c.label.toUpperCase()}
+            </span>
           </div>
-        );
-      })()}
+        ))}
+      </div>
+
+      {/* Tooltip */}
+      {tip && (
+        <div style={{
+          position:"fixed", left:tip.x+14, top:tip.y-100, zIndex:999, pointerEvents:"none",
+          background:t.tooltipBg, border:`1px solid ${t.borderMid}`,
+          borderRadius:4, padding:"12px 16px", minWidth:160,
+          boxShadow:`0 8px 28px rgba(0,0,0,0.3)`
+        }}>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, color:t.text, marginBottom:6 }}>
+            {fmtMon(tip.month)}
+          </div>
+          <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, color:t.textMid, marginBottom:8 }}>
+            {fmt(tip.total)} TOTAL JOBS
+          </div>
+          {Object.entries(CONF).map(([key, c]) => tip.mo[key] > 0 && (
+            <div key={key} style={{ display:"flex", alignItems:"center", gap:8, marginTop:4 }}>
+              <div style={{ width:8, height:8, borderRadius:1, background:c.color, flexShrink:0 }} />
+              <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, color:c.color }}>
+                {c.short}: {fmt(tip.mo[key])}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -366,7 +338,7 @@ function BarChart({ data, t }) {
       {rows.map(([ind, total], i) => (
         <div key={i}>
           <div style={{ display:"flex", justifyContent:"space-between", marginBottom:5 }}>
-            <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11, color:t.textMid, letterSpacing:1 }}>
+            <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, color:t.textMid, letterSpacing:1 }}>
               {ind.toUpperCase()}
             </span>
             <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, color:t.text, letterSpacing:2 }}>
@@ -399,7 +371,7 @@ function TimelineView({ data, t }) {
         return (
           <div key={month} style={{ display:"flex", gap:24, marginBottom:32 }}>
             <div style={{ width:72, flexShrink:0, paddingTop:3 }}>
-              <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
+              <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12,
                 letterSpacing:3, color:"#ff3b3b", textTransform:"uppercase" }}>{fmtMon(month)}</span>
             </div>
             <div style={{ flex:1, borderLeft:"1px solid rgba(255,59,59,0.22)", paddingLeft:24, position:"relative" }}>
@@ -414,7 +386,7 @@ function TimelineView({ data, t }) {
                       <div>
                         <div style={{ fontFamily:"'Bebas Neue',sans-serif",
                           fontSize:22, letterSpacing:2, color:t.text }}>{d.company}</div>
-                        <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
+                        <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12,
                           letterSpacing:2, color:t.textDim, marginTop:2 }}>
                           {d.industry.toUpperCase()} · {d.country.toUpperCase()}
                         </div>
@@ -427,7 +399,7 @@ function TimelineView({ data, t }) {
                     </div>
                     {d.quote && (
                       <div style={{ marginTop:10, paddingTop:10, borderTop:`1px solid ${t.border}`,
-                        fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
+                        fontFamily:"'Inter',system-ui,sans-serif", fontSize:12,
                         color:t.textDim, lineHeight:1.7, fontStyle:"italic" }}>
                         "{d.quote}"
                       </div>
@@ -479,13 +451,13 @@ function TableView({ data, t }) {
               const active = sortBy === key;
               return (
                 <th key={key} onClick={() => handleSort(key)}
-                  style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11, letterSpacing:3,
+                  style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, letterSpacing:3,
                     color: active ? t.text : t.textDim, textTransform:"uppercase",
                     padding:"10px 16px", textAlign:"left", fontWeight:400,
                     cursor:"pointer", userSelect:"none", whiteSpace:"nowrap",
                     transition:"color 0.12s" }}>
                   {label}
-                  <span style={{ marginLeft:5, opacity: active ? 1 : 0.3, fontSize:8 }}>
+                  <span style={{ marginLeft:5, opacity: active ? 1 : 0.3, fontSize:10 }}>
                     {active ? (sortDir === "asc" ? "↑" : "↓") : "↕"}
                   </span>
                 </th>
@@ -618,6 +590,7 @@ export default function MadeRedundant() {
     <div style={{
       minHeight:"100vh", background:t.bg, color:t.text,
       fontFamily:"'Inter',system-ui,sans-serif",
+      overflowX:"hidden",
       opacity:mounted?1:0,
       transition:"opacity 0.4s ease, background 0.35s ease, color 0.35s ease",
     }}>
@@ -662,7 +635,7 @@ export default function MadeRedundant() {
 
           {/* Subtitle row */}
           <div style={{ display:"flex", alignItems:"center", gap:24, flexWrap:"wrap" }}>
-            <p style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11, letterSpacing:0.5,
+            <p style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, letterSpacing:0.5,
               color:t.textMid, margin:0, lineHeight:1.8, maxWidth:500 }}>
               Tracking every workforce reduction attributed to artificial intelligence.<br/>
               <span style={{ color:t.textFaint }}>
@@ -694,7 +667,7 @@ export default function MadeRedundant() {
           }}>
             <span style={{ fontSize:18 }}>🇦🇺</span>
             <div style={{ flex:1, minWidth:160 }}>
-              <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11, letterSpacing:3,
+              <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, letterSpacing:3,
                 color:"rgba(0,200,120,0.7)", textTransform:"uppercase", marginBottom:4 }}>
                 Australia &amp; NZ Spotlight · Last 12 months
               </div>
@@ -702,19 +675,19 @@ export default function MadeRedundant() {
                 <div>
                   <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28,
                     color:"#00c878", letterSpacing:2 }}>{fmt(auJobs)}</span>
-                  <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
+                  <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12,
                     color:"rgba(0,200,120,0.55)", marginLeft:8, letterSpacing:1 }}>TOTAL JOBS</span>
                 </div>
                 <div>
                   <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28,
                     color:"#00c878", letterSpacing:2 }}>{fmt(auGenuine)}</span>
-                  <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
+                  <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12,
                     color:"rgba(0,200,120,0.55)", marginLeft:8, letterSpacing:1 }}>DISPLACED BY AI</span>
                 </div>
                 <div>
                   <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28,
                     color:"#00c878", letterSpacing:2 }}>{auCompanies}</span>
-                  <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
+                  <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12,
                     color:"rgba(0,200,120,0.55)", marginLeft:8, letterSpacing:1 }}>COMPANIES</span>
                 </div>
               </div>
@@ -722,7 +695,7 @@ export default function MadeRedundant() {
             <button onClick={() => setRegionFilter("Asia-Pacific")}
               style={{ padding:"6px 16px", borderRadius:2, cursor:"pointer",
                 background:"rgba(0,180,110,0.1)", border:"1px solid rgba(0,180,110,0.3)",
-                color:"#00c878", fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
+                color:"#00c878", fontFamily:"'Inter',system-ui,sans-serif", fontSize:12,
                 letterSpacing:2, whiteSpace:"nowrap", flexShrink:0 }}>
               FILTER REGION ↗
             </button>
@@ -773,7 +746,7 @@ export default function MadeRedundant() {
                     fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, letterSpacing:2,
                   }}>
                   {label.toUpperCase()}
-                  <span style={{ marginLeft:6, opacity:0.45, fontSize:9 }}>
+                  <span style={{ marginLeft:6, opacity:0.45, fontSize:11 }}>
                     ({key==="All"?withinPeriod.length:withinPeriod.filter(d=>d.aiConfidence===key).length})
                   </span>
                 </button>
@@ -783,7 +756,7 @@ export default function MadeRedundant() {
 
           {/* Region filter */}
           <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-            <span style={{ fontSize:11, letterSpacing:3, color:t.textFaint }}>REGION:</span>
+            <span style={{ fontSize:12, letterSpacing:3, color:t.textFaint }}>REGION:</span>
             {regions.map(r => (
               <button key={r} onClick={()=>setRegionFilter(r)}
                 style={{
@@ -791,7 +764,7 @@ export default function MadeRedundant() {
                   background: regionFilter===r?"rgba(255,59,59,0.1)":t.btnBg,
                   border:`1px solid ${regionFilter===r?"#ff3b3b40":t.btnBorder}`,
                   color: regionFilter===r?"#ff3b3b":t.textDim,
-                  fontFamily:"'Inter',system-ui,sans-serif", fontSize:11, letterSpacing:1,
+                  fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, letterSpacing:1,
                 }}>{r.toUpperCase()}</button>
             ))}
           </div>
@@ -814,7 +787,7 @@ export default function MadeRedundant() {
           ))}
           {!isMobile && (
             <div style={{ marginLeft:"auto", alignSelf:"center",
-              fontSize:11, letterSpacing:2, color:t.textFaint, whiteSpace:"nowrap", paddingLeft:16 }}>
+              fontSize:12, letterSpacing:2, color:t.textFaint, whiteSpace:"nowrap", paddingLeft:16 }}>
               {filtered.length} RECORDS · {fmt(totalJobs)} JOBS
             </div>
           )}
@@ -825,13 +798,13 @@ export default function MadeRedundant() {
           <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 300px", gap:20 }}>
             <div style={{ border:`1px solid ${t.border}`, borderRadius:4,
               padding:24, background:t.surface }}>
-              <div style={{ fontSize:11, letterSpacing:3, color:t.textDim,
-                marginBottom:20, textTransform:"uppercase" }}>Timeline · Bubble Size = Headcount</div>
-              <BubbleViz data={filtered} t={t}/>
+              <div style={{ fontSize:12, letterSpacing:3, color:t.textDim,
+                marginBottom:20, textTransform:"uppercase" }}>Jobs Lost by Month · Stacked by Classification</div>
+              <MonthlyBarChart data={filtered} t={t}/>
             </div>
             <div style={{ border:`1px solid ${t.border}`, borderRadius:4,
               padding:24, background:t.surface }}>
-              <div style={{ fontSize:11, letterSpacing:3, color:t.textDim,
+              <div style={{ fontSize:12, letterSpacing:3, color:t.textDim,
                 marginBottom:20, textTransform:"uppercase" }}>Impact by Industry</div>
               <BarChart data={filtered} t={t}/>
             </div>
@@ -851,7 +824,7 @@ export default function MadeRedundant() {
           <div style={{ border:`1px solid ${t.border}`, borderRadius:4,
             background:t.surface, overflow:"hidden" }}>
             <TableView data={filtered} t={t}/>
-            <div style={{ padding:"12px 16px", fontSize:11, letterSpacing:2,
+            <div style={{ padding:"12px 16px", fontSize:12, letterSpacing:2,
               color:t.textFaint, borderTop:`1px solid ${t.border}` }}>
               {filtered.length} COMPANIES · {fmt(totalJobs)} TOTAL POSITIONS
             </div>
@@ -862,12 +835,12 @@ export default function MadeRedundant() {
         <div style={{ marginTop:48, paddingTop:20, borderTop:`1px solid ${t.border}`,
           display:"flex", justifyContent:"space-between", alignItems:"center",
           flexWrap:"wrap", gap:12 }}>
-          <span style={{ fontSize:11, letterSpacing:2, color:t.textFaint }}>
+          <span style={{ fontSize:12, letterSpacing:2, color:t.textFaint }}>
             SOURCES: LAYOFFS.FYI · PROGRAMS.COM · RATIONALFX · CHALLENGER GRAY &amp; CHRISTMAS
           </span>
           <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer"
             style={{ display:"inline-flex", alignItems:"center", gap:7,
-              fontSize:11, letterSpacing:2, color:t.textFaint, textDecoration:"none",
+              fontSize:12, letterSpacing:2, color:t.textFaint, textDecoration:"none",
               transition:"color 0.15s" }}
             onMouseEnter={e=>e.currentTarget.style.color="#0a66c2"}
             onMouseLeave={e=>e.currentTarget.style.color=t.textFaint}>
