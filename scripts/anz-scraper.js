@@ -139,6 +139,45 @@ const RSS_SOURCES = [
   { name:"Startups.com.br",          url:"https://startups.com.br/feed/",                    country:"Brazil" },
   // Olhar Digital — tech news, often breaks LATAM fintech job cuts
   { name:"Olhar Digital",            url:"https://olhardigital.com.br/feed/",                country:"Brazil" },
+
+  // ── SE ASIA — English-language
+  // Tech in Asia — primary tracker for Singapore/Indonesia/SEA startup layoffs
+  { name:"Tech in Asia",             url:"https://www.techinasia.com/feed",                  country:"Singapore" },
+  // The Straits Times — Singapore's paper of record for corporate retrenchments
+  { name:"Straits Times — Business", url:"https://www.straitstimes.com/rss/business",        country:"Singapore" },
+  { name:"Straits Times — Tech",     url:"https://www.straitstimes.com/rss/tech",            country:"Singapore" },
+  // TechNode Global — AI restructuring and SEA tech cost-cutting
+  { name:"TechNode Global",          url:"https://technode.global/feed/",                    country:"Singapore" },
+  // Jakarta Globe — Indonesia manufacturing, e-commerce, tech layoffs
+  { name:"Jakarta Globe",            url:"https://jakartaglobe.id/feed",                     country:"Indonesia" },
+  // East Asia Forum — economic analysis of SEA tech/e-commerce layoffs
+  { name:"East Asia Forum",          url:"https://www.eastasiaforum.org/feed/",              country:"" },
+  // e27 — Asian tech startup ecosystem, funding/downsizing coverage
+  { name:"e27",                      url:"https://e27.co/feed/",                             country:"Singapore" },
+  // VnExpress International — Vietnam business and labour news
+  { name:"VnExpress International",  url:"https://e.vnexpress.net/rss/business.rss",         country:"Vietnam" },
+  // KrASIA — SEA and India tech coverage (affiliate of 36Kr)
+  { name:"KrASIA",                   url:"https://kr.asia/feed/",                            country:"" },
+  // Tech Wire Asia — enterprise tech and AI layoffs across ASEAN
+  { name:"Tech Wire Asia",           url:"https://techwireasia.com/feed/",                   country:"" },
+  // The Ken — deep-dive business journalism on India/SEA startups
+  { name:"The Ken",                  url:"https://the-ken.com/feed/",                        country:"" },
+
+  // ── EUROPE — English-language
+  // Sifted — leading European startup/tech redundancy tracker (UK, FR, DE, Nordics)
+  { name:"Sifted",                   url:"https://sifted.eu/feed/",                          country:"" },
+  // TheLayoff.com — community board; employees post stealth layoffs pre-press
+  { name:"TheLayoff.com",            url:"https://www.thelayoff.com/rss",                    country:"" },
+  // El País Economy — European/global restructuring with strong EU corporate coverage
+  { name:"El País Economy",          url:"https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/economia/portada", country:"" },
+  // ERM (Eurofound) — EU large-scale restructuring events (100+ job losses)
+  { name:"Eurofound ERM",            url:"https://www.eurofound.europa.eu/rss.xml",          country:"" },
+  // Handelsblatt Global — German/European business and corporate restructuring
+  { name:"Handelsblatt Global",      url:"https://www.handelsblatt.com/rss/thema/digital.rss", country:"Germany" },
+  // Les Echos — France's leading financial newspaper, strong EU tech coverage
+  { name:"Les Echos — Tech",         url:"https://www.lesechos.fr/rss/rss_tech.xml",         country:"France" },
+  // The Local (pan-European English) — covers redundancy news across DE, FR, SE, ES
+  { name:"The Local Europe",         url:"https://www.thelocal.com/feed/",                   country:"" },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -169,6 +208,18 @@ const LATAM_DOMAINS = [
   "crunchbase.com","upstreamonline.com","reddit.com",
 ].join(",");
 
+const SEASIA_DOMAINS = [
+  "techinasia.com","straitstimes.com","technode.global","jakartaglobe.id",
+  "eastasiaforum.org","e27.co","e.vnexpress.net","kr.asia",
+  "techwireasia.com","the-ken.com","bloomberg.com",
+].join(",");
+
+const EUROPE_DOMAINS = [
+  "sifted.eu","thelayoff.com","eurofound.europa.eu","handelsblatt.com",
+  "lesechos.fr","thelocal.com","bloomberg.com","ft.com",
+  "reuters.com","businessinsider.com","wired.com",
+].join(",");
+
 const NEWSAPI_QUERIES = [
   // ── ANZ queries
   { q:"layoffs redundancies AI artificial intelligence jobs Australia",          domains: ANZ_DOMAINS },
@@ -193,6 +244,23 @@ const NEWSAPI_QUERIES = [
   { q:"demissões inteligência artificial empregos Brasil tecnologia",              language:"pt" },
   { q:"corte de empregos automação IA tecnologia Brasil",                          language:"pt" },
   { q:"layoffs demissões startups fintechs Brasil",                                language:"pt" },
+
+  // ── SE Asia queries
+  { q:"layoffs AI automation jobs Singapore Indonesia Vietnam Malaysia Thailand",   domains: SEASIA_DOMAINS },
+  { q:"retrenchment AI technology jobs Singapore OR Indonesia OR Vietnam",          language:"en" },
+  { q:"tech startup layoffs \"Southeast Asia\" OR \"SEA\" OR ASEAN AI",            language:"en" },
+  { q:"Grab OR Gojek OR Shopee OR Sea OR Tokopedia OR Lazada layoffs jobs cuts",   language:"en" },
+  { q:"Singapore retrenchment mandatory notification AI workforce reduction",       domains: SEASIA_DOMAINS },
+
+  // ── Europe queries
+  { q:"layoffs AI automation jobs Europe UK Germany France Netherlands Sweden",     domains: EUROPE_DOMAINS },
+  { q:"redundancies AI technology workforce reduction Europe",                      language:"en" },
+  { q:"European restructuring AI automation large-scale layoffs tech",              language:"en" },
+  { q:"Eurofound restructuring monitor layoffs Europe AI",                          language:"en" },
+  { q:"tech layoffs UK OR Germany OR France OR Netherlands OR Sweden AI 2025",      language:"en" },
+  // European language queries
+  { q:"licenciements intelligence artificielle emplois Europe tech",                language:"fr" },
+  { q:"Entlassungen Stellenabbau KI künstliche Intelligenz Deutschland",            language:"de" },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -214,6 +282,18 @@ const LAYOFF_KW = [
   "demissão","demissões","corte de emprego","corte de vagas","redução de quadro",
   "automação","inteligência artificial","reestruturação","terceirização",
   "downsizing","layoff","enxugamento","dispensa em massa",
+  // ── French (Europe)
+  "licenciement","licenciements","suppressions de poste","plan social",
+  "réduction d'effectifs","restructuration","automatisation","intelligence artificielle",
+  "compression d'emplois","plan de sauvegarde",
+  // ── German (Europe)
+  "entlassung","entlassungen","stellenabbau","stellenstreichung",
+  "restrukturierung","automatisierung","künstliche intelligenz",
+  "personalabbau","betriebsbedingte kündigung","downsizing",
+  // ── SE Asia keywords (Bahasa Indonesia / Malay)
+  "phk","pemutusan hubungan kerja","pemangkasan","restrukturisasi",
+  "otomatisasi","kecerdasan buatan","pengurangan karyawan",
+  "retrenchment","redundansi",
 ];
 
 function isLayoffRelated(text) {
