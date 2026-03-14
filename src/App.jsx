@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
+import worldData from "world-atlas/countries-110m.json";
 
 function useIsMobile(breakpoint = 768) {
   return useSyncExternalStore(
@@ -431,7 +432,6 @@ class ErrorBoundary extends React.Component {
 // ─────────────────────────────────────────────────────────────
 //  CHOROPLETH MAP
 // ─────────────────────────────────────────────────────────────
-const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
 // Country name (as used in data) → ISO 3166-1 numeric
 const COUNTRY_ISO = {
@@ -522,7 +522,7 @@ function ChoroplethMap({ data, t, impactType, isMobile, isDark }) {
         projection="geoMercator"
         projectionConfig={{ scale: isMobile ? 90 : 140, center:[10, 20] }}
         style={{ width:"100%", height: isMobile ? 260 : 420, background: mapBg, borderRadius:4 }}>
-        <Geographies geography={GEO_URL}>
+        <Geographies geography={worldData}>
           {({ geographies }) => geographies.map(geo => {
             const isoNum = parseInt(geo.id);
             const name   = ISO_REVERSE[isoNum];
