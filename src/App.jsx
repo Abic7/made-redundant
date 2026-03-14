@@ -58,6 +58,17 @@ const SEED_DATA = [
   { company:"Accenture",         industry:"Consulting",           country:"USA",        region:"North America", date:"2026-02", headcount:5000,  aiConfidence:"genuine",     offshore:true, quote:"Shifting work to lower-cost markets and AI-automated delivery" },
   { company:"IBM",               industry:"Technology",           country:"USA",        region:"North America", date:"2025-09", headcount:3900,  aiConfidence:"genuine",     offshore:true, quote:"Consolidating onshore roles into global delivery hubs and AI automation" },
   { company:"Concentrix",        industry:"BPO / Customer Service",country:"USA",       region:"North America", date:"2025-07", headcount:2200,  aiConfidence:"genuine",     offshore:true, quote:"Restructuring contact centre operations toward AI and offshore hybrid model" },
+  // ── Offshoring — Europe ─────────────────────────────────────────
+  { company:"Capgemini",         industry:"IT Services",          country:"France",     region:"Europe",        date:"2025-08", headcount:3000,  aiConfidence:"genuine",     offshore:true, quote:"Moving delivery operations to lower-cost global centres" },
+  { company:"Vodafone",          industry:"Telecommunications",   country:"UK",         region:"Europe",        date:"2025-10", headcount:1400,  aiConfidence:"restructure", offshore:true, quote:"Outsourcing customer operations to offshore service partners" },
+  { company:"Deutsche Bank",     industry:"Banking",              country:"Germany",    region:"Europe",        date:"2025-07", headcount:900,   aiConfidence:"genuine",     offshore:true, quote:"Technology roles consolidated into global delivery hubs" },
+  { company:"BT Group",          industry:"Telecommunications",   country:"UK",         region:"Europe",        date:"2025-09", headcount:2000,  aiConfidence:"genuine",     offshore:true, quote:"Moving network and IT operations to offshore managed service providers" },
+  { company:"Société Générale",  industry:"Banking",              country:"France",     region:"Europe",        date:"2025-11", headcount:1200,  aiConfidence:"restructure", offshore:true, quote:"Back-office functions transitioned to offshore captive centres in India" },
+  // ── Offshoring — Latin America ──────────────────────────────────
+  { company:"Bradesco",          industry:"Banking",              country:"Brazil",     region:"Latin America", date:"2025-08", headcount:1800,  aiConfidence:"genuine",     offshore:true, quote:"Operational roles shifted to lower-cost shared service centres" },
+  { company:"Claro",             industry:"Telecommunications",   country:"Brazil",     region:"Latin America", date:"2025-10", headcount:900,   aiConfidence:"restructure", offshore:true, quote:"Customer service operations outsourced to offshore BPO partners" },
+  { company:"Teleperformance",   industry:"BPO / Customer Service",country:"Colombia",  region:"Latin America", date:"2025-06", headcount:2500,  aiConfidence:"genuine",     offshore:true, quote:"Centralising delivery into global AI-assisted offshore hubs" },
+  { company:"Grupo Bancolombia", industry:"Banking",              country:"Colombia",   region:"Latin America", date:"2025-09", headcount:600,   aiConfidence:"restructure", offshore:true, quote:"Technology and support functions moved to nearshore delivery model" },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -909,7 +920,7 @@ export default function MadeRedundant() {
         {/* ══ TABS ══ */}
         <div style={{ display:"flex", marginBottom:28, borderBottom:`1px solid ${t.border}`,
           overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-          {["overview","map","timeline","table"].map(tb => (
+          {["map","overview","timeline","table"].map(tb => (
             <button key={tb} onClick={()=>setTab(tb)}
               style={{
                 padding: isMobile ? "10px 18px" : "10px 24px",
