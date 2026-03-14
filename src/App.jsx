@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
+import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
 
 function useIsMobile(breakpoint = 768) {
   return useSyncExternalStore(
@@ -408,6 +409,156 @@ function TableView({ data, t }) {
 }
 
 // ─────────────────────────────────────────────────────────────
+//  CHOROPLETH MAP
+// ─────────────────────────────────────────────────────────────
+const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+
+// Country name (as used in data) → ISO 3166-1 numeric
+const COUNTRY_ISO = {
+  "USA":          840, "United States": 840,
+  "UK":           826, "United Kingdom": 826,
+  "Australia":     36,
+  "New Zealand":  554,
+  "Austria":       40,
+  "Sweden":       752,
+  "Netherlands":  528,
+  "Singapore":    702,
+  "Argentina":     32,
+  "India":        356,
+  "Germany":      276,
+  "France":       250,
+  "Canada":       124,
+  "Japan":        392,
+  "China":        156,
+  "Brazil":        76,
+  "South Korea":  410,
+  "Ireland":      372,
+};
+const ISO_REVERSE = Object.fromEntries(Object.entries(COUNTRY_ISO).map(([k,v])=>[v,k]));
+
+function lerp(a, b, t) {
+  return Math.round(a + (b - a) * t);
+}
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return [r,g,b];
+}
+function blendHex(base, target, t) {
+  const [r1,g1,b1] = hexToRgb(base);
+  const [r2,g2,b2] = hexToRgb(target);
+  return `rgb(${lerp(r1,r2,t)},${lerp(g1,g2,t)},${lerp(b1,b2,t)})`;
+}
+
+function ChoroplethMap({ data, t, impactType, isMobile }) {
+  const [tooltip, setTooltip] = useState(null);
+  const [pos,     setPos]     = useState({ x:0, y:0 });
+
+  // Aggregate headcount per country
+  const countryMap = {};
+  data.forEach(d => {
+    if (!d.country) return;
+    if (!countryMap[d.country]) countryMap[d.country] = { total:0, companies:[] };
+    countryMap[d.country].total += d.headcount;
+    if (!countryMap[d.country].companies.includes(d.company))
+      countryMap[d.country].companies.push(d.company);
+  });
+
+  const maxVal   = Math.max(...Object.values(countryMap).map(v=>v.total), 1);
+  const accentHex = impactType === "offshore" ? "#3b8fff" : "#ff3b3b";
+  const baseHex   = impactType === "offshore" ? "#0a1628" : "#1a0808";
+
+  const getCountryColor = (geoId) => {
+    const name = ISO_REVERSE[parseInt(geoId)];
+    const entry = name && countryMap[name];
+    if (!entry) return t.surface === "rgba(255,255,255,0.018)" ? "#13131f" : "#e0ddd8";
+    const intensity = Math.pow(entry.total / maxVal, 0.45); // sqrt scale
+    return blendHex(baseHex, accentHex, Math.max(0.15, intensity));
+  };
+
+  return (
+    <div style={{ position:"relative", width:"100%", userSelect:"none" }}>
+      {/* Legend */}
+      <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16, flexWrap:"wrap" }}>
+        <span style={{ fontSize:12, letterSpacing:2, color:t.textDim }}>JOBS LOST</span>
+        <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+          <span style={{ fontSize:11, color:t.textFaint }}>LOW</span>
+          <div style={{ width:120, height:8, borderRadius:2,
+            background:`linear-gradient(90deg, ${baseHex} 0%, ${accentHex} 100%)`,
+            border:`1px solid ${t.border}` }}/>
+          <span style={{ fontSize:11, color:t.textFaint }}>HIGH</span>
+        </div>
+        <span style={{ fontSize:11, color:t.textFaint, marginLeft:8 }}>
+          {Object.keys(countryMap).length} countries affected
+        </span>
+      </div>
+
+      <ComposableMap
+        projection="geoMercator"
+        projectionConfig={{ scale: isMobile ? 90 : 140, center:[10, 20] }}
+        style={{ width:"100%", height: isMobile ? 260 : 420 }}>
+        <ZoomableGroup zoom={1} minZoom={0.8} maxZoom={6}>
+          <Geographies geography={GEO_URL}>
+            {({ geographies }) => geographies.map(geo => {
+              const isoNum = parseInt(geo.id);
+              const name   = ISO_REVERSE[isoNum];
+              const entry  = name && countryMap[name];
+              return (
+                <Geography
+                  key={geo.rsmKey}
+                  geography={geo}
+                  fill={getCountryColor(geo.id)}
+                  stroke={t.border}
+                  strokeWidth={0.4}
+                  style={{
+                    default:  { outline:"none" },
+                    hover:    { outline:"none", opacity:0.8, cursor: entry ? "pointer" : "default" },
+                    pressed:  { outline:"none" },
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!entry) return;
+                    setTooltip({ name, entry });
+                    setPos({ x: e.clientX, y: e.clientY });
+                  }}
+                  onMouseMove={(e)  => setPos({ x: e.clientX, y: e.clientY })}
+                  onMouseLeave={()  => setTooltip(null)}
+                />
+              );
+            })}
+          </Geographies>
+        </ZoomableGroup>
+      </ComposableMap>
+
+      {/* Tooltip */}
+      {tooltip && (
+        <div style={{
+          position:"fixed", left: pos.x + 14, top: pos.y - 80,
+          zIndex:9999, pointerEvents:"none",
+          background: t.tooltipBg || "#0c0c14",
+          border:`1px solid ${t.borderMid}`,
+          borderRadius:4, padding:"10px 14px", minWidth:160,
+          boxShadow:"0 8px 28px rgba(0,0,0,0.4)",
+        }}>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18,
+            letterSpacing:2, color:t.text, marginBottom:4 }}>
+            {tooltip.name}
+          </div>
+          <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12,
+            color: accentHex, marginBottom:4 }}>
+            {fmt(tooltip.entry.total)} JOBS AFFECTED
+          </div>
+          <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:11,
+            color:t.textMid }}>
+            {tooltip.entry.companies.join(" · ")}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 //  MAIN APP
 // ─────────────────────────────────────────────────────────────
 export default function MadeRedundant() {
@@ -732,7 +883,7 @@ export default function MadeRedundant() {
         {/* ══ TABS ══ */}
         <div style={{ display:"flex", marginBottom:28, borderBottom:`1px solid ${t.border}`,
           overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-          {["overview","timeline","table"].map(tb => (
+          {["overview","map","timeline","table"].map(tb => (
             <button key={tb} onClick={()=>setTab(tb)}
               style={{
                 padding: isMobile ? "10px 18px" : "10px 24px",
@@ -759,6 +910,21 @@ export default function MadeRedundant() {
             <div style={{ fontSize:12, letterSpacing:3, color:t.textDim,
               marginBottom:20, textTransform:"uppercase" }}>Impact by Industry</div>
             <BarChart data={filtered} t={t}/>
+          </div>
+        )}
+
+        {/* ══ MAP ══ */}
+        {tab==="map" && (
+          <div style={{ border:`1px solid ${t.border}`, borderRadius:4,
+            padding: isMobile ? "16px" : "24px 28px", background:t.surface }}>
+            <div style={{ fontSize:12, letterSpacing:3, color:t.textDim,
+              marginBottom:4, textTransform:"uppercase" }}>
+              Global Impact · {impactType === "offshore" ? "Offshoring" : "AI Displacement"} · Last 12 Months
+            </div>
+            <div style={{ fontSize:11, color:t.textFaint, marginBottom:20, letterSpacing:1 }}>
+              Scroll to zoom · drag to pan · hover country for details
+            </div>
+            <ChoroplethMap data={filtered} t={t} impactType={impactType} isMobile={isMobile}/>
           </div>
         )}
 
