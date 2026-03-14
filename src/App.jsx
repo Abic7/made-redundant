@@ -27,7 +27,7 @@ const SEED_DATA = [
   { company:"Atlassian",         industry:"Enterprise Software",  country:"Australia",  region:"Asia-Pacific",  date:"2026-03", headcount:1600,  aiConfidence:"genuine",     quote:"It would be disingenuous to pretend AI doesn't change the mix of skills we need or the number of roles required" },
   { company:"ANZ Bank",          industry:"Banking",              country:"Australia",  region:"Asia-Pacific",  date:"2025-09", headcount:3500,  aiConfidence:"washing",     quote:"This is not about profits — this is about what we need to do for a better company" },
   { company:"Telstra",           industry:"Telecommunications",   country:"Australia",  region:"Asia-Pacific",  date:"2024-05", headcount:2800,  aiConfidence:"washing",     quote:"AI is being used to improve half of Telstra's key processes" },
-  { company:"Telstra",           industry:"Telecommunications",   country:"Australia",  region:"Asia-Pacific",  date:"2026-02", headcount:600,   aiConfidence:"genuine",     quote:"AI-driven job cuts and offshoring of roles to lower-cost locations" },
+  { company:"Telstra",           industry:"Telecommunications",   country:"Australia",  region:"Asia-Pacific",  date:"2026-02", headcount:600,   aiConfidence:"genuine",     offshore:true, quote:"AI-driven job cuts and offshoring of roles to lower-cost locations" },
   { company:"Commonwealth Bank", industry:"Banking",              country:"Australia",  region:"Asia-Pacific",  date:"2026-02", headcount:300,   aiConfidence:"genuine",     quote:"Priority is to transition people into higher-impact roles requiring greater expertise, judgement and empathy" },
   { company:"Optus",             industry:"Telecommunications",   country:"Australia",  region:"Asia-Pacific",  date:"2025-05", headcount:440,   aiConfidence:"restructure",  quote:"Making further changes to become a world class digital service provider that puts customers first" },
   { company:"Spark NZ",          industry:"Telecommunications",   country:"New Zealand",region:"Asia-Pacific",  date:"2024-08", headcount:190,   aiConfidence:"genuine",     quote:"Jobs will go as it outsources to AI and a networking partner" },
@@ -48,6 +48,14 @@ const SEED_DATA = [
   { company:"MercadoLibre",      industry:"E-commerce",           country:"Argentina",  region:"Latin America", date:"2026-01", headcount:119,   aiConfidence:"genuine",     quote:"AI automatically generates product descriptions and categorizes listings" },
   { company:"ANGI Homeservices", industry:"Home Services",        country:"USA",        region:"North America", date:"2026-01", headcount:350,   aiConfidence:"washing",     quote:"Technology and operational efficiency improvements" },
   { company:"Oracle",            industry:"Enterprise Software",  country:"USA",        region:"North America", date:"2026-01", headcount:254,   aiConfidence:"washing",     quote:"Cost-saving measures and automated processes" },
+  // ── Offshoring entries ──────────────────────────────────────────
+  { company:"NAB",               industry:"Banking",              country:"Australia",  region:"Asia-Pacific",  date:"2025-11", headcount:700,   aiConfidence:"restructure", offshore:true, quote:"Back-office and technology operations relocated to lower-cost service centres" },
+  { company:"ANZ Bank",          industry:"Banking",              country:"Australia",  region:"Asia-Pacific",  date:"2025-08", headcount:400,   aiConfidence:"restructure", offshore:true, quote:"Operational roles transitioned to offshore delivery partners in India and Philippines" },
+  { company:"Westpac",           industry:"Banking",              country:"Australia",  region:"Asia-Pacific",  date:"2025-10", headcount:550,   aiConfidence:"restructure", offshore:true, quote:"Technology and operations functions moved to global delivery centres" },
+  { company:"Infosys",           industry:"IT Services",          country:"India",      region:"Asia-Pacific",  date:"2026-01", headcount:25000, aiConfidence:"genuine",     offshore:true, quote:"Reducing domestic headcount as offshore AI-assisted delivery models scale" },
+  { company:"Accenture",         industry:"Consulting",           country:"USA",        region:"North America", date:"2026-02", headcount:5000,  aiConfidence:"genuine",     offshore:true, quote:"Shifting work to lower-cost markets and AI-automated delivery" },
+  { company:"IBM",               industry:"Technology",           country:"USA",        region:"North America", date:"2025-09", headcount:3900,  aiConfidence:"genuine",     offshore:true, quote:"Consolidating onshore roles into global delivery hubs and AI automation" },
+  { company:"Concentrix",        industry:"BPO / Customer Service",country:"USA",       region:"North America", date:"2025-07", headcount:2200,  aiConfidence:"genuine",     offshore:true, quote:"Restructuring contact centre operations toward AI and offshore hybrid model" },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -233,102 +241,6 @@ function ThemeToggle({ dark, onToggle, t }) {
 //  CHART COMPONENTS
 // ─────────────────────────────────────────────────────────────
 
-function MonthlyBarChart({ data, t }) {
-  const [tip, setTip] = useState(null);
-
-  // Group by month + classification
-  const monthMap = {};
-  data.forEach(d => {
-    if (!d.date) return;
-    if (!monthMap[d.date]) monthMap[d.date] = { genuine:0, washing:0, restructure:0 };
-    monthMap[d.date][d.aiConfidence] = (monthMap[d.date][d.aiConfidence] || 0) + d.headcount;
-  });
-  const months = Object.keys(monthMap).sort();
-  if (!months.length) return (
-    <div style={{ color:t.textFaint, fontFamily:"'Inter',system-ui,sans-serif", fontSize:13, padding:"32px 0", textAlign:"center" }}>
-      No data for current filters
-    </div>
-  );
-
-  const totals  = months.map(m => monthMap[m].genuine + monthMap[m].washing + monthMap[m].restructure);
-  const maxTotal = Math.max(...totals, 1);
-  const BAR_H   = 180;
-  const LAYERS  = [["restructure", CONF.restructure.color], ["washing", CONF.washing.color], ["genuine", CONF.genuine.color]];
-
-  return (
-    <div style={{ position:"relative" }}>
-      {/* Chart */}
-      <div style={{ display:"flex", alignItems:"flex-end", gap:6 }}>
-        {months.map((month, mi) => {
-          const mo    = monthMap[month];
-          const total = totals[mi];
-          const barH  = Math.max(4, (total / maxTotal) * BAR_H);
-          return (
-            <div key={month} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", cursor:"pointer", minWidth:0 }}
-              onMouseEnter={e => setTip({ month, mo, total, x:e.clientX, y:e.clientY })}
-              onMouseMove={e  => setTip(prev => prev ? { ...prev, x:e.clientX, y:e.clientY } : null)}
-              onMouseLeave={() => setTip(null)}>
-              {/* Total label above bar */}
-              <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, color:t.textDim, marginBottom:4, whiteSpace:"nowrap" }}>
-                {fmt(total)}
-              </div>
-              {/* Stacked bar */}
-              <div style={{ width:"100%", height:barH, display:"flex", flexDirection:"column", borderRadius:"2px 2px 0 0", overflow:"hidden" }}>
-                {LAYERS.map(([key, color]) => {
-                  const seg = mo[key] || 0;
-                  if (!seg) return null;
-                  return <div key={key} style={{ width:"100%", flex:`${seg} 0 0`, background:color, opacity:0.88 }} />;
-                })}
-              </div>
-              {/* Month label */}
-              <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, color:t.textDim,
-                letterSpacing:0.5, textAlign:"center", marginTop:6, lineHeight:1.2 }}>
-                {fmtMon(month).replace(" ", "\n")}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Legend */}
-      <div style={{ display:"flex", gap:16, marginTop:20, flexWrap:"wrap" }}>
-        {Object.entries(CONF).map(([key, c]) => (
-          <div key={key} style={{ display:"flex", alignItems:"center", gap:6 }}>
-            <div style={{ width:10, height:10, borderRadius:1, background:c.color, opacity:0.88, flexShrink:0 }} />
-            <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, color:t.textDim, letterSpacing:1 }}>
-              {c.label.toUpperCase()}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Tooltip */}
-      {tip && (
-        <div style={{
-          position:"fixed", left:tip.x+14, top:tip.y-100, zIndex:999, pointerEvents:"none",
-          background:t.tooltipBg, border:`1px solid ${t.borderMid}`,
-          borderRadius:4, padding:"12px 16px", minWidth:160,
-          boxShadow:`0 8px 28px rgba(0,0,0,0.3)`
-        }}>
-          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, color:t.text, marginBottom:6 }}>
-            {fmtMon(tip.month)}
-          </div>
-          <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, color:t.textMid, marginBottom:8 }}>
-            {fmt(tip.total)} TOTAL JOBS
-          </div>
-          {Object.entries(CONF).map(([key, c]) => tip.mo[key] > 0 && (
-            <div key={key} style={{ display:"flex", alignItems:"center", gap:8, marginTop:4 }}>
-              <div style={{ width:8, height:8, borderRadius:1, background:c.color, flexShrink:0 }} />
-              <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, color:c.color }}>
-                {c.short}: {fmt(tip.mo[key])}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 function BarChart({ data, t }) {
   const byInd = {};
@@ -511,6 +423,7 @@ export default function MadeRedundant() {
   const [regionFilter,   setRegionFilter]  = useState("All");
   const [confFilter,     setConfFilter]    = useState("All");
   const [search,         setSearch]        = useState("");
+  const [impactType,     setImpactType]    = useState("ai"); // "ai" | "offshore"
   const [mounted,        setMounted]       = useState(false);
 
   const t = THEMES[isDark ? "dark" : "light"];
@@ -557,7 +470,11 @@ export default function MadeRedundant() {
   const oneYearAgo = (() => { const d = new Date(); d.setFullYear(d.getFullYear()-1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; })();
 
   // All records within the rolling 1-year window — used for counts, regions, and as the base for all filters
-  const withinPeriod = data.filter(d => d.date >= oneYearAgo);
+  const withinPeriod = data.filter(d => {
+    if (d.date < oneYearAgo) return false;
+    if (impactType === "offshore") return !!d.offshore;
+    return true; // "ai" shows everything
+  });
 
   const regions  = ["All", ...Array.from(new Set(withinPeriod.map(d=>d.region))).sort()];
   const searchQ  = search.trim().toLowerCase();
@@ -648,15 +565,48 @@ export default function MadeRedundant() {
           </div>
         </div>
 
+        {/* ══ IMPACT TYPE TOGGLE ══ */}
+        <div style={{ display:"flex", gap:8, marginBottom:28, borderTop:`1px solid ${t.border}`, paddingTop:24 }}>
+          {[
+            { key:"ai",       label:"JOBS IMPACTED BY AI",         icon:"⚡", color:"#ff3b3b" },
+            { key:"offshore", label:"JOBS IMPACTED BY OFFSHORING", icon:"🌏", color:"#3b8fff" },
+          ].map(({ key, label, icon, color }) => {
+            const active = impactType === key;
+            return (
+              <button key={key} onClick={() => { setImpactType(key); setRegionFilter("All"); setConfFilter("All"); }}
+                style={{
+                  display:"flex", alignItems:"center", gap:8,
+                  padding: isMobile ? "10px 14px" : "12px 24px",
+                  borderRadius:3, cursor:"pointer", transition:"all 0.18s",
+                  background: active ? `${color}18` : t.btnBg,
+                  border:`1.5px solid ${active ? color : t.btnBorder}`,
+                  color: active ? color : t.textMid,
+                  fontFamily:"'Inter',system-ui,sans-serif",
+                  fontSize: isMobile ? 11 : 12, letterSpacing:2, fontWeight: active ? 700 : 400,
+                  flex: isMobile ? 1 : "none",
+                }}>
+                <span style={{ fontSize:14 }}>{icon}</span>
+                <span>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+
         {/* ══ STATS ══ */}
         <div style={{ display:"grid",
           gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(auto-fit,minmax(160px,1fr))",
-          gap: isMobile ? "24px 20px" : "0 48px", marginBottom: isMobile ? 32 : 52,
-          borderTop:`1px solid ${t.border}`, paddingTop:28 }}>
-          <Stat label="Total Jobs Lost"     value={fmt(totalJobs)}   sub="across all tracked companies"  accent="#ff3b3b"          t={t}/>
-          <Stat label="Displaced by AI"     value={fmt(genuineJobs)} sub="roles directly automated away" accent="#ff7b3b"          t={t}/>
-          <Stat label="AI Washing Suspects" value={washingCount}     sub="financially motivated cuts"    accent={CONF.washing.color} t={t}/>
-          <Stat label="Companies Tracked"   value={companies}        sub="and counting"                  accent={CONF.restructure.color} t={t}/>
+          gap: isMobile ? "24px 20px" : "0 48px", marginBottom: isMobile ? 32 : 52 }}>
+          {impactType === "ai" ? <>
+            <Stat label="Total Jobs Lost"     value={fmt(totalJobs)}   sub="across all tracked companies"  accent="#ff3b3b"               t={t}/>
+            <Stat label="Displaced by AI"     value={fmt(genuineJobs)} sub="roles directly automated away" accent="#ff7b3b"               t={t}/>
+            <Stat label="AI Washing Suspects" value={washingCount}     sub="financially motivated cuts"    accent={CONF.washing.color}    t={t}/>
+            <Stat label="Companies Tracked"   value={companies}        sub="and counting"                  accent={CONF.restructure.color} t={t}/>
+          </> : <>
+            <Stat label="Total Jobs Offshored" value={fmt(totalJobs)}   sub="roles moved to lower-cost markets" accent="#3b8fff"          t={t}/>
+            <Stat label="AI-Linked Offshore"   value={fmt(genuineJobs)} sub="offshored alongside AI adoption"   accent="#7bb8ff"          t={t}/>
+            <Stat label="Pure Restructures"    value={washingCount}     sub="cost-motivated moves"              accent={CONF.washing.color} t={t}/>
+            <Stat label="Companies Tracked"    value={companies}        sub="and counting"                      accent={CONF.restructure.color} t={t}/>
+          </>}
         </div>
 
         {/* ══ AUSTRALIA SPOTLIGHT ══ */}
@@ -797,19 +747,11 @@ export default function MadeRedundant() {
 
         {/* ══ OVERVIEW ══ */}
         {tab==="overview" && (
-          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 300px", gap:20 }}>
-            <div style={{ border:`1px solid ${t.border}`, borderRadius:4,
-              padding:24, background:t.surface }}>
-              <div style={{ fontSize:12, letterSpacing:3, color:t.textDim,
-                marginBottom:20, textTransform:"uppercase" }}>Jobs Lost by Month · Stacked by Classification</div>
-              <MonthlyBarChart data={filtered} t={t}/>
-            </div>
-            <div style={{ border:`1px solid ${t.border}`, borderRadius:4,
-              padding:24, background:t.surface }}>
-              <div style={{ fontSize:12, letterSpacing:3, color:t.textDim,
-                marginBottom:20, textTransform:"uppercase" }}>Impact by Industry</div>
-              <BarChart data={filtered} t={t}/>
-            </div>
+          <div style={{ border:`1px solid ${t.border}`, borderRadius:4,
+            padding:24, background:t.surface }}>
+            <div style={{ fontSize:12, letterSpacing:3, color:t.textDim,
+              marginBottom:20, textTransform:"uppercase" }}>Impact by Industry</div>
+            <BarChart data={filtered} t={t}/>
           </div>
         )}
 
