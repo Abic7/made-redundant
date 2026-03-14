@@ -513,7 +513,14 @@ export default function MadeRedundant() {
       opacity:mounted?1:0,
       transition:"opacity 0.4s ease, background 0.35s ease, color 0.35s ease",
     }}>
-      <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+      <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@700;800&display=swap" rel="stylesheet"/>
+      <style>{`
+        * { font-weight: 700 !important; }
+        @keyframes breathe {
+          0%,100% { box-shadow: 0 0 0 0 rgba(0,200,120,0.55); border-color: #00c878; }
+          50%      { box-shadow: 0 0 0 10px rgba(0,200,120,0); border-color: rgba(0,200,120,0.5); }
+        }
+      `}</style>
 
       {/* Noise overlay */}
       <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0, opacity:t.noiseOp,
@@ -529,28 +536,26 @@ export default function MadeRedundant() {
         {/* ══ MASTHEAD ══ */}
         <div style={{ marginBottom: isMobile ? 28 : 48 }}>
 
-          {/* Title row + theme toggle */}
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start",
-            flexWrap:"wrap", gap:16, marginBottom:4 }}>
+          {/* Title row — byline + theme toggle bottom-right inline with title */}
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end",
+            flexWrap:"wrap", gap:16, marginBottom:18 }}>
             <h1 style={{ fontFamily:"'Bebas Neue',sans-serif",
               fontSize:"clamp(46px,9vw,96px)", letterSpacing:6, margin:0, lineHeight:1, color:t.text }}>
               MADE REDUNDANT
             </h1>
-            <div style={{ paddingTop:6 }}>
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8, paddingBottom:4 }}>
               <ThemeToggle dark={isDark} onToggle={()=>setIsDark(d=>!d)} t={t}/>
+              <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer"
+                style={{ display:"inline-flex", alignItems:"center", gap:7,
+                  fontFamily:"'Inter',system-ui,sans-serif", fontSize:13, letterSpacing:2,
+                  fontWeight:700, color:"#ff3b3b", textDecoration:"none", transition:"color 0.15s" }}
+                onMouseEnter={e=>e.currentTarget.style.color="#0a66c2"}
+                onMouseLeave={e=>e.currentTarget.style.color="#ff3b3b"}>
+                BY ABI CHAUDHURI
+                <LinkedInIcon size={13}/>
+              </a>
             </div>
           </div>
-
-          {/* Byline — Abi Chaudhuri + LinkedIn icon */}
-          <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer"
-            style={{ display:"inline-flex", alignItems:"center", gap:7, marginBottom:18,
-              fontFamily:"'Inter',system-ui,sans-serif", fontSize:13, letterSpacing:2,
-              fontWeight:700, color:"#ff3b3b", textDecoration:"none", transition:"color 0.15s" }}
-            onMouseEnter={e=>e.currentTarget.style.color="#0a66c2"}
-            onMouseLeave={e=>e.currentTarget.style.color="#ff3b3b"}>
-            BY ABI CHAUDHURI
-            <LinkedInIcon size={13}/>
-          </a>
 
           {/* Subtitle row */}
           <div style={{ display:"flex", alignItems:"center", gap:24, flexWrap:"wrap" }}>
@@ -568,22 +573,24 @@ export default function MadeRedundant() {
         {/* ══ IMPACT TYPE TOGGLE ══ */}
         <div style={{ display:"flex", gap:8, marginBottom:28, borderTop:`1px solid ${t.border}`, paddingTop:24 }}>
           {[
-            { key:"ai",       label:"JOBS IMPACTED BY AI",         icon:"⚡", color:"#ff3b3b" },
-            { key:"offshore", label:"JOBS IMPACTED BY OFFSHORING", icon:"🌏", color:"#3b8fff" },
-          ].map(({ key, label, icon, color }) => {
+            { key:"ai",       label:"JOBS IMPACTED BY AI",         icon:"⚡" },
+            { key:"offshore", label:"JOBS IMPACTED BY OFFSHORING", icon:"🌏" },
+          ].map(({ key, label, icon }) => {
             const active = impactType === key;
             return (
               <button key={key} onClick={() => { setImpactType(key); setRegionFilter("All"); setConfFilter("All"); }}
                 style={{
                   display:"flex", alignItems:"center", gap:8,
                   padding: isMobile ? "10px 14px" : "12px 24px",
-                  borderRadius:3, cursor:"pointer", transition:"all 0.18s",
-                  background: active ? `${color}18` : t.btnBg,
-                  border:`1.5px solid ${active ? color : t.btnBorder}`,
-                  color: active ? color : t.textMid,
+                  borderRadius:3, cursor:"pointer",
+                  background: active ? "rgba(0,200,120,0.12)" : t.btnBg,
+                  border:`1.5px solid ${active ? "#00c878" : t.btnBorder}`,
+                  color: active ? "#00c878" : t.textMid,
                   fontFamily:"'Inter',system-ui,sans-serif",
-                  fontSize: isMobile ? 11 : 12, letterSpacing:2, fontWeight: active ? 700 : 400,
+                  fontSize: isMobile ? 11 : 12, letterSpacing:2, fontWeight:700,
                   flex: isMobile ? 1 : "none",
+                  animation: active ? "breathe 2s ease-in-out infinite" : "none",
+                  transition: active ? "none" : "all 0.18s",
                 }}>
                 <span style={{ fontSize:14 }}>{icon}</span>
                 <span>{label}</span>
