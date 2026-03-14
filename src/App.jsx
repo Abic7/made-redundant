@@ -818,7 +818,7 @@ export default function MadeRedundant() {
                   <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28,
                     color:"#00c878", letterSpacing:2 }}>{fmt(auGenuine)}</span>
                   <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12,
-                    color:"rgba(0,200,120,0.55)", marginLeft:8, letterSpacing:1 }}>DISPLACED BY AI</span>
+                    color:"rgba(0,200,120,0.55)", marginLeft:8, letterSpacing:1 }}>{impactType === "offshore" ? "OFFSHORED" : "DISPLACED BY AI"}</span>
                 </div>
                 <div>
                   <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28,
