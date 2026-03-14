@@ -641,7 +641,7 @@ export default function MadeRedundant() {
               color:t.textMid, margin:0, lineHeight:1.8, maxWidth:500 }}>
               Tracking every workforce reduction attributed to artificial intelligence.<br/>
               <span style={{ color:t.textFaint }}>
-                Updated weekly · Classified by Claude AI · Automated with n8n
+                Updated weekly
               </span>
             </p>
             <LiveBadge status={status} nextRun={nextRun} t={t}/>
@@ -834,21 +834,78 @@ export default function MadeRedundant() {
         )}
 
         {/* ══ FOOTER ══ */}
-        <div style={{ marginTop:48, paddingTop:20, borderTop:`1px solid ${t.border}`,
-          display:"flex", justifyContent:"space-between", alignItems:"center",
-          flexWrap:"wrap", gap:12 }}>
-          <span style={{ fontSize:12, letterSpacing:1, color:t.textFaint, wordBreak:"break-word" }}>
-            SOURCES: LAYOFFS.FYI · PROGRAMS.COM · RATIONALFX · CHALLENGER GRAY &amp; CHRISTMAS
-          </span>
-          <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer"
-            style={{ display:"inline-flex", alignItems:"center", gap:7,
-              fontSize:12, letterSpacing:2, color:t.textFaint, textDecoration:"none",
-              transition:"color 0.15s" }}
-            onMouseEnter={e=>e.currentTarget.style.color="#0a66c2"}
-            onMouseLeave={e=>e.currentTarget.style.color=t.textFaint}>
-            MADEREDUNDANT.IO · BY ABI CHAUDHURI
-            <LinkedInIcon size={11}/>
-          </a>
+        <div style={{ marginTop:48, paddingTop:20, borderTop:`1px solid ${t.border}`, display:"flex",
+          flexDirection:"column", gap:16 }}>
+
+          {/* Supported by row */}
+          <div style={{ display:"flex", alignItems:"center", gap:14, flexWrap:"wrap" }}>
+            <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, letterSpacing:2,
+              color:t.textFaint, flexShrink:0 }}>SUPPORTED BY</span>
+
+            {/* Anthropic */}
+            <a href="https://www.anthropic.com" target="_blank" rel="noopener noreferrer"
+              style={{ display:"inline-flex", alignItems:"center", gap:7, textDecoration:"none",
+                padding:"5px 12px", borderRadius:4,
+                background:t.btnBg, border:`1px solid ${t.btnBorder}`, transition:"border-color 0.15s" }}
+              onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(212,165,110,0.5)"}
+              onMouseLeave={e=>e.currentTarget.style.borderColor=t.btnBorder}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M13.827 3.52h-3.654L5 20.48h3.64l1.124-3.272h4.472l1.124 3.272H19L13.827 3.52zm-3.109 10.88 1.582-4.608 1.582 4.608H10.718z" fill="#d4a56a"/>
+              </svg>
+              <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12,
+                letterSpacing:1, color:"#d4a56a", fontWeight:500 }}>Anthropic</span>
+            </a>
+
+            {/* Qwen */}
+            <a href="https://qwenlm.github.io" target="_blank" rel="noopener noreferrer"
+              style={{ display:"inline-flex", alignItems:"center", gap:7, textDecoration:"none",
+                padding:"5px 12px", borderRadius:4,
+                background:t.btnBg, border:`1px solid ${t.btnBorder}`, transition:"border-color 0.15s" }}
+              onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(100,160,255,0.5)"}
+              onMouseLeave={e=>e.currentTarget.style.borderColor=t.btnBorder}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="9" stroke="#6aa0ff" strokeWidth="1.5"/>
+                <path d="M8 12c0-2.21 1.79-4 4-4s4 1.79 4 4-1.79 4-4 4" stroke="#6aa0ff" strokeWidth="1.5" strokeLinecap="round"/>
+                <circle cx="16" cy="16" r="1.5" fill="#6aa0ff"/>
+              </svg>
+              <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12,
+                letterSpacing:1, color:"#6aa0ff", fontWeight:500 }}>Qwen 3.5</span>
+            </a>
+
+            {/* n8n */}
+            <a href="https://n8n.io" target="_blank" rel="noopener noreferrer"
+              style={{ display:"inline-flex", alignItems:"center", gap:7, textDecoration:"none",
+                padding:"5px 12px", borderRadius:4,
+                background:t.btnBg, border:`1px solid ${t.btnBorder}`, transition:"border-color 0.15s" }}
+              onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(234,75,113,0.5)"}
+              onMouseLeave={e=>e.currentTarget.style.borderColor=t.btnBorder}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="3" width="8" height="8" rx="2" fill="#ea4b71"/>
+                <rect x="13" y="3" width="8" height="8" rx="2" fill="#ea4b71" opacity="0.5"/>
+                <rect x="3" y="13" width="8" height="8" rx="2" fill="#ea4b71" opacity="0.5"/>
+                <rect x="13" y="13" width="8" height="8" rx="2" fill="#ea4b71"/>
+              </svg>
+              <span style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12,
+                letterSpacing:1, color:"#ea4b71", fontWeight:500 }}>n8n</span>
+            </a>
+          </div>
+
+          {/* Bottom row: sources + byline */}
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
+            flexWrap:"wrap", gap:12 }}>
+            <span style={{ fontSize:12, letterSpacing:1, color:t.textFaint, wordBreak:"break-word" }}>
+              SOURCES: LAYOFFS.FYI · PROGRAMS.COM · RATIONALFX · CHALLENGER GRAY &amp; CHRISTMAS
+            </span>
+            <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer"
+              style={{ display:"inline-flex", alignItems:"center", gap:7,
+                fontSize:12, letterSpacing:2, color:"#ff3b3b", textDecoration:"none",
+                fontWeight:700, transition:"color 0.15s" }}
+              onMouseEnter={e=>e.currentTarget.style.color="#0a66c2"}
+              onMouseLeave={e=>e.currentTarget.style.color="#ff3b3b"}>
+              MADEREDUNDANT.IO · BY ABI CHAUDHURI
+              <LinkedInIcon size={11}/>
+            </a>
+          </div>
         </div>
 
       </div>
