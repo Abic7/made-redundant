@@ -196,13 +196,15 @@ function LiveBadge({ status, nextRun, t }) {
 
 function Stat({ label, value, sub, accent, t }) {
   return (
-    <div style={{ borderTop:`2px solid ${accent}`, paddingTop:16 }}>
-      <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, letterSpacing:3,
-        color:t.textDim, textTransform:"uppercase", marginBottom:8 }}>{label}</div>
-      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:48,
+    <div style={{ borderTop:`2px solid ${accent}`, paddingTop:16, minWidth:0, overflow:"hidden" }}>
+      <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, letterSpacing:2,
+        color:t.textDim, textTransform:"uppercase", marginBottom:8,
+        whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{label}</div>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"clamp(32px,8vw,48px)",
         lineHeight:1, color:t.text, letterSpacing:2 }}>{value}</div>
       {sub && <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12,
-        color:t.textFaint, marginTop:6 }}>{sub}</div>}
+        color:t.textFaint, marginTop:6, whiteSpace:"nowrap", overflow:"hidden",
+        textOverflow:"ellipsis" }}>{sub}</div>}
     </div>
   );
 }
@@ -666,7 +668,7 @@ export default function MadeRedundant() {
             alignItems: isMobile ? "flex-start" : "center", gap: isMobile ? 12 : 24,
           }}>
             <span style={{ fontSize:18 }}>🇦🇺</span>
-            <div style={{ flex:1, minWidth:160 }}>
+            <div style={{ flex:1, minWidth:0 }}>
               <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:12, letterSpacing:3,
                 color:"rgba(0,200,120,0.7)", textTransform:"uppercase", marginBottom:4 }}>
                 Australia &amp; NZ Spotlight · Last 12 months
@@ -835,7 +837,7 @@ export default function MadeRedundant() {
         <div style={{ marginTop:48, paddingTop:20, borderTop:`1px solid ${t.border}`,
           display:"flex", justifyContent:"space-between", alignItems:"center",
           flexWrap:"wrap", gap:12 }}>
-          <span style={{ fontSize:12, letterSpacing:2, color:t.textFaint }}>
+          <span style={{ fontSize:12, letterSpacing:1, color:t.textFaint, wordBreak:"break-word" }}>
             SOURCES: LAYOFFS.FYI · PROGRAMS.COM · RATIONALFX · CHALLENGER GRAY &amp; CHRISTMAS
           </span>
           <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer"
@@ -853,6 +855,7 @@ export default function MadeRedundant() {
 
       <style>{`
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.18} }
+        html, body { overflow-x:hidden; max-width:100%; }
         * { box-sizing:border-box; margin:0; padding:0; }
         button { outline:none; }
         ::-webkit-scrollbar { width:3px; height:3px; }
