@@ -690,24 +690,27 @@ export default function MadeRedundant() {
         {/* ══ MASTHEAD ══ */}
         <div style={{ marginBottom: isMobile ? 28 : 48 }}>
 
-          {/* Title row — byline + theme toggle bottom-right inline with title */}
+          {/* Title row — byline inline next to title, theme toggle far right */}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end",
             flexWrap:"wrap", gap:16, marginBottom:18 }}>
-            <h1 style={{ fontFamily:"'Bebas Neue',sans-serif",
-              fontSize:"clamp(46px,9vw,96px)", letterSpacing:6, margin:0, lineHeight:1, color:t.text }}>
-              MADE REDUNDANT
-            </h1>
-            <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8, paddingBottom:4 }}>
-              <ThemeToggle dark={isDark} onToggle={()=>setIsDark(d=>!d)} t={t}/>
+            <div style={{ display:"flex", alignItems:"baseline", gap:20, flexWrap:"wrap" }}>
+              <h1 style={{ fontFamily:"'Bebas Neue',sans-serif",
+                fontSize:"clamp(46px,9vw,96px)", letterSpacing:6, margin:0, lineHeight:1, color:t.text }}>
+                MADE REDUNDANT
+              </h1>
               <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer"
                 style={{ display:"inline-flex", alignItems:"center", gap:7,
                   fontFamily:"'Inter',system-ui,sans-serif", fontSize:13, letterSpacing:2,
-                  fontWeight:700, color:"#ff3b3b", textDecoration:"none", transition:"color 0.15s" }}
+                  fontWeight:700, color:"#ff3b3b", textDecoration:"none", transition:"color 0.15s",
+                  whiteSpace:"nowrap" }}
                 onMouseEnter={e=>e.currentTarget.style.color="#0a66c2"}
                 onMouseLeave={e=>e.currentTarget.style.color="#ff3b3b"}>
                 BY ABI CHAUDHURI
                 <LinkedInIcon size={13}/>
               </a>
+            </div>
+            <div style={{ paddingBottom:4 }}>
+              <ThemeToggle dark={isDark} onToggle={()=>setIsDark(d=>!d)} t={t}/>
             </div>
           </div>
 
