@@ -508,7 +508,7 @@ function ChoroplethMap({ data, t, impactType, isMobile, isDark }) {
         <div style={{ display:"flex", alignItems:"center", gap:4 }}>
           <span style={{ fontSize:11, color:t.textFaint }}>LOW</span>
           <div style={{ width:120, height:8, borderRadius:2,
-            background:`linear-gradient(90deg, ${baseHex} 0%, ${accentHex} 100%)`,
+            background:`linear-gradient(90deg, ${dimHex} 0%, ${accentHex} 100%)`,
             border:`1px solid ${t.border}` }}/>
           <span style={{ fontSize:11, color:t.textFaint }}>HIGH</span>
         </div>
