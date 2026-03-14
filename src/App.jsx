@@ -488,8 +488,9 @@ function ChoroplethMap({ data, t, impactType, isMobile, isDark }) {
   const maxVal    = Math.max(...Object.values(countryMap).map(v=>v.total), 1);
   const accentHex = impactType === "offshore" ? "#3b8fff" : "#ff3b3b";
   const dimHex    = impactType === "offshore" ? "#1a3a6e" : "#6e1a1a";
-  const noDataColor = isDark ? "#1c1c2e" : "#d0cdc8";
-  const strokeColor = isDark ? "#2a2a3a" : "#b8b4ae";
+  const noDataColor = isDark ? "#1e1e30" : "#c2beb8";
+  const mapBg       = isDark ? "#0e0e1a" : "#e8e4df";
+  const strokeColor = isDark ? "#32324a" : "#a09c96";
 
   const getCountryColor = (geoId) => {
     const name  = ISO_REVERSE[parseInt(geoId)];
@@ -520,7 +521,7 @@ function ChoroplethMap({ data, t, impactType, isMobile, isDark }) {
       <ComposableMap
         projection="geoMercator"
         projectionConfig={{ scale: isMobile ? 90 : 140, center:[10, 20] }}
-        style={{ width:"100%", height: isMobile ? 260 : 420 }}>
+        style={{ width:"100%", height: isMobile ? 260 : 420, background: mapBg, borderRadius:4 }}>
         <Geographies geography={GEO_URL}>
           {({ geographies }) => geographies.map(geo => {
             const isoNum = parseInt(geo.id);
