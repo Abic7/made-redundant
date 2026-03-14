@@ -97,7 +97,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Sanitize title & description before JSON interpolation.\n// Removes control chars, replaces double-quotes with single-quotes,\n// and normalises backslashes — prevents 'JSON parameter needs to be\n// valid JSON' errors in the Claude Haiku HTTP Request node.\nconst sanitize = (str, maxLen) =>\n  (str || '')\n    .replace(/[\\x00-\\x1f\\x7f]/g, ' ')\n    .replace(/\"/g, \"'\")\n    .replace(/\\\\/g, '/')\n    .trim()\n    .substring(0, maxLen);\n\n// Use Object.assign — spread ($json) is not supported in n8n 2.7.5 Code nodes\nconst out = Object.assign({}, $json, {\n  titleSafe: sanitize($json.title, 300),\n  descSafe:  sanitize($json.description, 500)\n});\n\nreturn [{ json: out }];",
+        "jsCode": "// Sanitize title & description before JSON interpolation.\n// Removes control chars, replaces double-quotes with single-quotes,\n// and normalises backslashes — prevents 'JSON parameter needs to be\n// valid JSON' errors in the Claude Haiku HTTP Request node.\n// NOTE: $json is a proxy in n8n 2.7.5 — must build a plain object explicitly.\nconst sanitize = (str, maxLen) =>\n  (str || '')\n    .replace(/[\\x00-\\x1f\\x7f]/g, ' ')\n    .replace(/\"/g, \"'\")\n    .replace(/\\\\/g, '/')\n    .trim()\n    .substring(0, maxLen);\n\nreturn [{ json: {\n  title:       $json.title       || '',\n  description: $json.description || '',\n  source:      $json.source      || '',\n  url:         $json.url         || '',\n  publishedAt: $json.publishedAt || '',\n  existing:    $json.existing    || '[]',\n  titleSafe:   sanitize($json.title, 300),\n  descSafe:    sanitize($json.description, 500)\n} }];",
         "mode": "runOnceForEachItem"
       },
       "name": "Sanitize Text",
