@@ -110,7 +110,7 @@ const CONF = {
 //  HELPERS
 // ─────────────────────────────────────────────────────────────
 const MONTH_NAMES = ["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const fmt    = n  => n >= 1000 ? `${(n/1000).toFixed(1)}k` : String(n);
+const fmt    = n  => n >= 1000 ? `${(n/1000).toFixed(1)}K` : String(n);
 const fmtMon = dt => { if (!dt) return ""; const [y,m] = dt.split("-"); return `${MONTH_NAMES[+m]} ${y}`; };
 
 function parseSheetRows(rows) {
@@ -451,7 +451,7 @@ function blendHex(base, target, t) {
   return `rgb(${lerp(r1,r2,t)},${lerp(g1,g2,t)},${lerp(b1,b2,t)})`;
 }
 
-function ChoroplethMap({ data, t, impactType, isMobile }) {
+function ChoroplethMap({ data, t, impactType, isMobile, isDark }) {
   const [tooltip, setTooltip] = useState(null);
   const [pos,     setPos]     = useState({ x:0, y:0 });
 
@@ -465,16 +465,19 @@ function ChoroplethMap({ data, t, impactType, isMobile }) {
       countryMap[d.country].companies.push(d.company);
   });
 
-  const maxVal   = Math.max(...Object.values(countryMap).map(v=>v.total), 1);
+  const maxVal    = Math.max(...Object.values(countryMap).map(v=>v.total), 1);
   const accentHex = impactType === "offshore" ? "#3b8fff" : "#ff3b3b";
-  const baseHex   = impactType === "offshore" ? "#0a1628" : "#1a0808";
+  const dimHex    = impactType === "offshore" ? "#1a3a6e" : "#6e1a1a";
+  const noDataColor = isDark ? "#1c1c2e" : "#d0cdc8";
+  const strokeColor = isDark ? "#2a2a3a" : "#b8b4ae";
 
   const getCountryColor = (geoId) => {
-    const name = ISO_REVERSE[parseInt(geoId)];
+    const name  = ISO_REVERSE[parseInt(geoId)];
     const entry = name && countryMap[name];
-    if (!entry) return t.surface === "rgba(255,255,255,0.018)" ? "#13131f" : "#e0ddd8";
-    const intensity = Math.pow(entry.total / maxVal, 0.45); // sqrt scale
-    return blendHex(baseHex, accentHex, Math.max(0.15, intensity));
+    if (!entry) return noDataColor;
+    // Scale from dim (low) → accent (high) with sqrt curve for better distribution
+    const intensity = Math.pow(entry.total / maxVal, 0.4);
+    return blendHex(dimHex, accentHex, Math.max(0.3, intensity));
   };
 
   return (
@@ -509,7 +512,7 @@ function ChoroplethMap({ data, t, impactType, isMobile }) {
                   key={geo.rsmKey}
                   geography={geo}
                   fill={getCountryColor(geo.id)}
-                  stroke={t.border}
+                  stroke={strokeColor}
                   strokeWidth={0.4}
                   style={{
                     default:  { outline:"none" },
@@ -924,7 +927,7 @@ export default function MadeRedundant() {
             <div style={{ fontSize:11, color:t.textFaint, marginBottom:20, letterSpacing:1 }}>
               Scroll to zoom · drag to pan · hover country for details
             </div>
-            <ChoroplethMap data={filtered} t={t} impactType={impactType} isMobile={isMobile}/>
+            <ChoroplethMap data={filtered} t={t} impactType={impactType} isMobile={isMobile} isDark={isDark}/>
           </div>
         )}
 
